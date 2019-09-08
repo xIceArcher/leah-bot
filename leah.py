@@ -6,7 +6,7 @@ from utils.credentials_utils import get_credentials
 
 logging.basicConfig(level=logging.INFO)
 
-active_extensions = ['cogs.PostTweetMedia', 'cogs.PostRetweet', 'cogs.TwitterStalker']
+active_extensions = ['cogs.PostTweetMedia', 'cogs.PostQuotedTweet', 'cogs.TwitterStalker']
 
 
 def main():
