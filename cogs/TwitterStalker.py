@@ -1,5 +1,7 @@
 import asyncio
+import json
 import logging
+import os
 from queue import Queue
 from threading import Event
 
@@ -38,6 +40,8 @@ class TwitterStalker(commands.Cog):
         self.stream = None
         self.stalk_destinations = {}
 
+        self.load_json()
+        
         self.start_stream()
         asyncio.run_coroutine_threadsafe(self.discord_poster(), bot.loop)
         asyncio.run_coroutine_threadsafe(self.stream_restarter(), bot.loop)
@@ -138,8 +142,21 @@ class TwitterStalker(commands.Cog):
                 self.kill_stream()
                 self.start_stream()
                 self.restart_flag.clear()
+                self.save_json()
 
             await asyncio.sleep(60)
+
+    def load_json(self):
+        path = os.path.join(os.getcwd(), 'data', 'tweets.json')
+        print(path)
+        with open(path) as f:
+            self.stalk_destinations = json.load(f)
+
+    def save_json(self):
+        path = os.path.join(os.getcwd(), 'data', 'tweets.json')
+        with open(path, 'w') as f:
+            f.seek(0)
+            json.dump(self.stalk_destinations, f, indent=4)
 
 
 def setup(bot):
