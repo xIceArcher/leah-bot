@@ -41,29 +41,10 @@ class TwitterStalker(commands.Cog):
         self.stalk_destinations = {}
 
         self.load_json()
-        
+
         self.start_stream()
         asyncio.run_coroutine_threadsafe(self.discord_poster(), bot.loop)
         asyncio.run_coroutine_threadsafe(self.stream_restarter(), bot.loop)
-
-    def cog_unload(self):
-        self.kill_stream()
-
-    def start_stream(self):
-        self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue)
-        self.stream = tweepy.Stream(auth=get_tweepy().auth, listener=self.listener)
-        self.stream.filter(follow=list(self.stalk_destinations), is_async=True)
-        logger.info(f'Stream started! Now stalking IDs: {list(self.stalk_destinations)}')
-
-    def kill_stream(self):
-        self.listener = None
-        self.stream.disconnect()
-        self.stream = None
-        logger.info('Stream killed!')
-
-    def restart_stream(self):
-        self.kill_stream()
-        self.start_stream()
 
     @commands.command()
     @is_owner()
@@ -141,10 +122,26 @@ class TwitterStalker(commands.Cog):
             if self.restart_flag.is_set():
                 self.kill_stream()
                 self.start_stream()
-                self.restart_flag.clear()
                 self.save_json()
+                self.restart_flag.clear()
 
             await asyncio.sleep(60)
+
+    def start_stream(self):
+        self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue)
+        self.stream = tweepy.Stream(auth=get_tweepy().auth, listener=self.listener)
+        self.stream.filter(follow=list(self.stalk_destinations), is_async=True)
+        logger.info(f'Stream started! Now stalking IDs: {list(self.stalk_destinations)}')
+
+    def kill_stream(self):
+        self.listener = None
+        self.stream.disconnect()
+        self.stream = None
+        logger.info('Stream killed!')
+
+    def restart_stream(self):
+        self.kill_stream()
+        self.start_stream()
 
     def load_json(self):
         path = os.path.join(os.getcwd(), 'data', 'tweets.json')
@@ -157,6 +154,9 @@ class TwitterStalker(commands.Cog):
         with open(path, 'w') as f:
             f.seek(0)
             json.dump(self.stalk_destinations, f, indent=4)
+
+    def cog_unload(self):
+        self.kill_stream()
 
 
 def setup(bot):
