@@ -1,12 +1,13 @@
 import asyncio
 import logging
 from queue import Queue
+from threading import Event
 
 import tweepy
 from discord.ext import commands
 
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, extract_text
 from utils.discord_utils import is_owner
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,14 @@ class TwitterStalker(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.tweet_queue = Queue()
+        self.restart_flag = Event()
         self.listener = None
         self.stream = None
-        self.stalk_ids = []
         self.stalk_destinations = {}
 
         self.start_stream()
         asyncio.run_coroutine_threadsafe(self.discord_poster(), bot.loop)
+        asyncio.run_coroutine_threadsafe(self.stream_restarter(), bot.loop)
 
     def cog_unload(self):
         self.kill_stream()
@@ -38,8 +40,8 @@ class TwitterStalker(commands.Cog):
     def start_stream(self):
         self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue)
         self.stream = tweepy.Stream(auth=get_tweepy().auth, listener=self.listener)
-        self.stream.filter(follow=self.stalk_ids, is_async=True)
-        logger.info(f'Stream started! Now stalking IDs: {self.stalk_ids}')
+        self.stream.filter(follow=list(self.stalk_destinations), is_async=True)
+        logger.info(f'Stream started! Now stalking IDs: {list(self.stalk_destinations)}')
 
     def kill_stream(self):
         self.listener = None
@@ -61,10 +63,9 @@ class TwitterStalker(commands.Cog):
 
         user_id = str(user.id)
 
-        if user_id not in self.stalk_ids:
-            self.stalk_ids.append(user_id)
+        if user_id not in self.stalk_destinations:
             self.stalk_destinations[user_id] = []
-            self.restart_stream()
+            self.restart_flag.set()
 
         if ctx.channel.id not in self.stalk_destinations[user_id]:
             self.stalk_destinations[user_id].append(ctx.channel.id)
@@ -82,15 +83,14 @@ class TwitterStalker(commands.Cog):
 
         user_id = str(user.id)
 
-        if user_id not in self.stalk_ids or ctx.channel.id not in self.stalk_destinations[user_id]:
+        if user_id not in self.stalk_destinations or ctx.channel.id not in self.stalk_destinations[user_id]:
             await ctx.channel.send(f'{screen_name} (ID: {user_id}) is not being stalked in this channel!')
 
         self.stalk_destinations[user_id].remove(ctx.channel.id)
 
         if len(self.stalk_destinations[user_id]) == 0:
-            self.stalk_ids.remove(user_id)
             del self.stalk_destinations[user_id]
-            self.restart_stream()
+            self.restart_flag.set()
 
         await ctx.channel.send(f'Unstalked {screen_name} (ID: {user_id}) in this channel!')
 
@@ -113,7 +113,7 @@ class TwitterStalker(commands.Cog):
                 tweet = self.tweet_queue.get()
                 user_id = str(tweet.user.id)
 
-                if user_id not in self.stalk_ids:
+                if user_id not in self.stalk_destinations:
                     continue
 
                 for channel_id in self.stalk_destinations[user_id]:
@@ -124,7 +124,15 @@ class TwitterStalker(commands.Cog):
             else:
                 await asyncio.sleep(1)
 
+    async def stream_restarter(self):
+        while True:
+            if self.restart_flag.is_set():
+                self.kill_stream()
+                self.start_stream()
+                self.restart_flag.clear()
+
+            await asyncio.sleep(60)
+
 
 def setup(bot):
     bot.add_cog(TwitterStalker(bot))
-
