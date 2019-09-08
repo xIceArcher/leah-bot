@@ -7,17 +7,25 @@ import tweepy
 from discord.ext import commands
 
 from utils.discord_utils import is_owner
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, is_reply
 
 logger = logging.getLogger(__name__)
 
 
 class DiscordRepostListener(tweepy.StreamListener):
-    def __init__(self, tweet_queue):
+    def __init__(self, tweet_queue, retweet_flag=False, reply_flag=False):
         super().__init__()
         self.tweet_queue = tweet_queue
+        self.retweet_flag = retweet_flag
+        self.reply_flag = reply_flag
 
     def on_status(self, tweet):
+        if is_retweet(tweet) and not self.retweet_flag:
+            return
+
+        if is_reply(tweet) and not self.reply_flag:
+            return
+
         self.tweet_queue.put(tweet)
 
 
