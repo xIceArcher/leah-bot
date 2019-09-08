@@ -8,7 +8,6 @@ from threading import Event
 import tweepy
 from discord.ext import commands
 
-from utils.discord_utils import is_owner
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, is_reply
 
 logger = logging.getLogger(__name__)
@@ -47,7 +46,7 @@ class TwitterStalker(commands.Cog):
         asyncio.run_coroutine_threadsafe(self.stream_restarter(), bot.loop)
 
     @commands.command()
-    @is_owner()
+    @commands.is_owner()
     async def stalk(self, ctx, screen_name: str):
         user = get_user(screen_name=screen_name)
 
@@ -67,7 +66,7 @@ class TwitterStalker(commands.Cog):
             await ctx.channel.send(f'{screen_name} (ID: {user_id}) is already being stalked in this channel!')
 
     @commands.command()
-    @is_owner()
+    @commands.is_owner()
     async def unstalk(self, ctx, screen_name):
         user = get_user(screen_name=screen_name)
 
@@ -88,7 +87,7 @@ class TwitterStalker(commands.Cog):
         await ctx.channel.send(f'Unstalked {screen_name} (ID: {user_id}) in this channel!')
 
     @commands.command()
-    @is_owner()
+    @commands.is_owner()
     async def stalks(self, ctx):
         stalked_users = []
 
@@ -145,7 +144,6 @@ class TwitterStalker(commands.Cog):
 
     def load_json(self):
         path = os.path.join(os.getcwd(), 'data', 'tweets.json')
-        print(path)
         with open(path) as f:
             self.stalk_destinations = json.load(f)
 

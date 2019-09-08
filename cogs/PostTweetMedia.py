@@ -12,8 +12,14 @@ MAX_MEDIA_COUNT = 5
 
 
 class PostTweetMedia(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
     @commands.Cog.listener()
     async def on_message(self, message):
+        if self.bot.command_prefix == message.content[0:len(self.bot.command_prefix)]:
+            return
+
         cleaned_message = clean_message(message.content)
         sent_media_count = 0
 
@@ -59,4 +65,4 @@ class PostTweetMedia(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(PostTweetMedia())
+    bot.add_cog(PostTweetMedia(bot))
