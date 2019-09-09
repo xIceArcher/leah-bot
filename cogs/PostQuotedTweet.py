@@ -1,26 +1,37 @@
-from discord.ext import commands
+import logging
 
-from utils.discord_utils import clean_message
+from discord.ext import commands
+from tweepy import TweepError
+
 from utils.twitter_utils import get_tweet, is_quote, get_tweet_url
 from utils.url_utils import get_tweet_ids
+
+logger = logging.getLogger(__name__)
 
 
 class PostQuotedTweet(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if self.bot.command_prefix == message.content[0:len(self.bot.command_prefix)]:
-            return
+    @commands.command()
+    async def quoted(self, ctx, twitter_url: str):
+        tweet_id = get_tweet_ids(twitter_url)[0]
 
-        cleaned_message = clean_message(message.content)
+        if not tweet_id:
+            await ctx.channel.send('Not a valid Twitter URL!')
 
-        for tweet_id in get_tweet_ids(cleaned_message):
+        tweet = None
+
+        try:
             tweet = get_tweet(tweet_id)
+        except TweepError:
+            await ctx.channel.send(f'Tweet ID {tweet_id} is not valid!')
 
-            if is_quote(tweet):
-                await message.channel.send(f'Quoted Tweet: {get_tweet_url(tweet.quoted_status)}')
+        if is_quote(tweet):
+            await ctx.channel.send(f'Quoted Tweet: {get_tweet_url(tweet.quoted_status)}')
+            logger.info(f'Tweet ID: {tweet_id}, Quoted Tweet: {get_tweet_url(tweet.quoted_status)}')
+        else:
+            await ctx.channel.send(f'This tweet does not quote any other tweet!')
 
 
 def setup(bot):
