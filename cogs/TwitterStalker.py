@@ -24,6 +24,14 @@ class DiscordRepostListener(tweepy.StreamListener):
     def on_status(self, tweet):
         self.tweet_queue.put(tweet)
 
+    def on_error(self, status_code):
+        logger.info(f"Stream error. Status code: {status_code}")
+        self.restart_flag.set()
+
+    def on_timeout(self):
+        logger.info("Stream timeout")
+        self.restart_flag.set()
+
     def on_disconnect(self, notice):
         logger.info(f"Stream crashed. Notice: {notice}")
         self.restart_flag.set()
