@@ -3,12 +3,18 @@ from discord import Embed
 from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, get_tweet
 
 
-def get_tweet_embed(id: int):
+def get_tweet_embed(id: int, color: int = None):
     tweet = get_tweet(id)
 
-    embed = Embed(title=f'Tweet by {tweet.user.name}',
-                  description=extract_text(tweet),
-                  url=get_tweet_url(tweet))
+    if color:
+        embed = Embed(title=f'Tweet by {tweet.user.name}',
+                      description=extract_text(tweet),
+                      url=get_tweet_url(tweet),
+                      color=color)
+    else:
+        embed = Embed(title=f'Tweet by {tweet.user.name}',
+                      description=extract_text(tweet),
+                      url=get_tweet_url(tweet))
 
     embed.timestamp = tweet.created_at
 

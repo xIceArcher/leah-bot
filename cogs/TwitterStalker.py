@@ -50,6 +50,7 @@ class TwitterStalker(commands.Cog):
         self.listener = None
         self.stream = None
         self.stalk_destinations = {}
+        self.colors = {}
 
         self.load_json()
 
@@ -137,7 +138,8 @@ class TwitterStalker(commands.Cog):
 
     async def send_tweet(self, channel, short_tweet):
         tweet = get_tweet(short_tweet.id)
-        await channel.send(embed=get_tweet_embed(tweet.id))
+
+        await channel.send(embed=get_tweet_embed(tweet.id, color=self.colors.get(tweet.user.id_str)))
 
         photos = extract_photo_urls(tweet)
 
@@ -182,9 +184,13 @@ class TwitterStalker(commands.Cog):
         self.start_stream()
 
     def load_json(self):
-        path = os.path.join(os.getcwd(), 'data', 'tweets.json')
-        with open(path) as f:
+        stalk_path = os.path.join(os.getcwd(), 'data', 'tweets.json')
+        with open(stalk_path) as f:
             self.stalk_destinations = json.load(f)
+
+        colors_path = os.path.join(os.getcwd(), 'data', 'colors.json')
+        with open(colors_path) as f:
+            self.colors = json.load(f)
 
     def save_json(self):
         path = os.path.join(os.getcwd(), 'data', 'tweets.json')
