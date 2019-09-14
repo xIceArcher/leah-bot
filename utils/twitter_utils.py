@@ -57,8 +57,11 @@ def extract_text(tweet):
     for url in tweet.entities['urls']:
         text = text.replace(url['url'], url['expanded_url'])
 
-    for media in tweet.extended_entities['media']:
-        text = text.replace(media['url'], "")
+    try:
+        for media in tweet.extended_entities['media']:
+            text = text.replace(media['url'], "")
+    except AttributeError:
+        pass
 
     return text
 
