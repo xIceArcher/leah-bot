@@ -8,31 +8,27 @@ from threading import Event
 import tweepy
 from discord.ext import commands
 
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, is_reply
+from utils.discord_embed_utils import get_tweet_embed, get_photo_embed
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, is_reply, get_tweet, \
+    extract_photo_urls, extract_video_url
 
 logger = logging.getLogger(__name__)
 
 
 class DiscordRepostListener(tweepy.StreamListener):
-    def __init__(self, tweet_queue, retweet_flag=False, reply_flag=False):
+    def __init__(self, tweet_queue):
         super().__init__()
         self.tweet_queue = tweet_queue
-        self.retweet_flag = retweet_flag
-        self.reply_flag = reply_flag
 
     def on_status(self, tweet):
-        if is_retweet(tweet) and not self.retweet_flag:
-            return
-
-        if is_reply(tweet) and not self.reply_flag:
-            return
-
         self.tweet_queue.put(tweet)
 
 
 class TwitterStalker(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, retweet_flag=False, reply_flag=False):
         self.bot = bot
+        self.retweet_flag = retweet_flag
+        self.reply_flag = reply_flag
         self.tweet_queue = Queue()
         self.restart_flag = Event()
         self.listener = None
@@ -102,6 +98,13 @@ class TwitterStalker(commands.Cog):
         while True:
             if not self.tweet_queue.empty():
                 tweet = self.tweet_queue.get()
+
+                if is_retweet(tweet) and not self.retweet_flag:
+                    continue
+
+                if is_reply(tweet, user_id_whitelist=list(self.stalk_destinations)) and not self.reply_flag:
+                    continue
+
                 user_id = str(tweet.user.id)
 
                 if user_id not in self.stalk_destinations:
@@ -109,12 +112,32 @@ class TwitterStalker(commands.Cog):
 
                 for channel_id in self.stalk_destinations[user_id]:
                     channel = self.bot.get_channel(channel_id)
-                    await channel.send(get_tweet_url(tweet))
+                    await self.send_tweet(channel, tweet)
                     logger.info(f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
                                 f' in {self.bot.get_channel(channel_id).guild.name}')
 
             else:
                 await asyncio.sleep(1)
+
+    async def send_tweet(self, channel, short_tweet):
+        tweet = get_tweet(short_tweet.id)
+        await channel.send(embed=get_tweet_embed(tweet.id))
+
+        photos = extract_photo_urls(tweet)
+
+        try:
+            photos.pop(0)
+        except (AttributeError, IndexError):
+            pass
+
+        if photos:
+            for photo in photos:
+                await channel.send(embed=get_photo_embed(photo))
+
+        video = extract_video_url(tweet)
+
+        if video:
+            await channel.send(video)
 
     async def stream_restarter(self):
         while True:

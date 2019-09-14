@@ -2,8 +2,9 @@ import logging
 
 from discord.ext import commands
 
+from utils.discord_embed_utils import get_photo_embed
 from utils.discord_utils import clean_message
-from utils.twitter_utils import extract_photos, get_tweet
+from utils.twitter_utils import extract_photo_urls, get_tweet
 from utils.url_utils import get_tweet_ids, get_photo_id
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class PostTweetMedia(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if self.bot.command_prefix == message.content[0:len(self.bot.command_prefix)]:
+        if message.content.startswith(self.bot.command_prefix):
             return
 
         cleaned_message = clean_message(message.content)
@@ -25,14 +26,15 @@ class PostTweetMedia(commands.Cog):
 
         for tweet_id in get_tweet_ids(cleaned_message):
             tweet = get_tweet(tweet_id)
-            photos = extract_photos(tweet)
+            photos = extract_photo_urls(tweet)
 
-            logger.info(f'Message: {message.content} in {message.channel.name}, {message.channel.guild.name}, Tweet ID: {tweet_id}, Photos: {photos}')
-
-            if photos is None or len(photos) == 0:
+            if not photos:
                 continue
 
             photos.pop(0)
+
+            logger.info(
+                f'Message: {message.content} in {message.channel.name}, {message.channel.guild.name}, Tweet ID: {tweet_id}, Photos: {photos}')
 
             for photo in photos:
                 if sent_media_count >= MAX_MEDIA_COUNT:
@@ -41,7 +43,7 @@ class PostTweetMedia(commands.Cog):
 
                 if cleaned_message.find(get_photo_id(photo)) == -1:
                     sent_media_count += 1
-                    await message.channel.send(photo)
+                    await message.channel.send(embed=get_photo_embed(photo))
 
     @commands.command()
     async def photos(self, ctx, twitter_url: str):
@@ -52,7 +54,7 @@ class PostTweetMedia(commands.Cog):
             return
 
         tweet = get_tweet(tweet_ids[0])
-        photos = extract_photos(tweet)
+        photos = extract_photo_urls(tweet)
 
         if len(photos) == 0:
             await ctx.channel.send("Tweet does not have any photos!")

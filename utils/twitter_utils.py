@@ -35,31 +35,42 @@ def is_quote(tweet):
     return hasattr(tweet, 'quoted_status')
 
 
-def is_reply(tweet):
+def is_reply(tweet, user_id_whitelist: list = None):
+    if user_id_whitelist:
+        return tweet.in_reply_to_user_id is not None and tweet.in_reply_to_user_id not in user_id_whitelist
+
     return tweet.in_reply_to_user_id is not None and tweet.in_reply_to_user_id != tweet.user.id
 
 
 def extract_text(tweet):
     if is_retweet(tweet):
         try:
-            return tweet.retweeted_status.extended_tweet["full_text"]
+            text = tweet.retweeted_status.full_text
         except AttributeError:
-            return tweet.retweeted_status.text
+            text = tweet.retweeted_status.text
     else:
         try:
-            return tweet.extended_tweet["full_text"]
+            text = tweet.full_text
         except AttributeError:
-            return tweet.text
+            text = tweet.text
+
+    for url in tweet.entities['urls']:
+        text = text.replace(url['url'], url['expanded_url'])
+
+    for media in tweet.extended_entities['media']:
+        text = text.replace(media['url'], "")
+
+    return text
 
 
-def extract_photos(tweet):
+def extract_photo_urls(tweet):
     try:
         return [get_photo_url(x['media_url']) for x in tweet.extended_entities['media'] if x['type'] == 'photo']
     except (AttributeError, KeyError):
         return None
 
 
-def extract_video(tweet):
+def extract_video_url(tweet):
     max_bitrate = -1
     max_url = None
 
@@ -80,6 +91,10 @@ def extract_links(tweet):
 
 def get_tweet_url(tweet):
     return f'https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}'
+
+
+def get_profile_url(user):
+    return f'https://twitter.com/{user.screen_name}'
 
 
 def get_tweet(tweet_id: int):
