@@ -27,7 +27,7 @@ class PostTweetMedia(commands.Cog):
             tweet = get_tweet(tweet_id)
             photos = extract_photos(tweet)
 
-            logger.info(f'Message: {message.content}, Tweet ID: {tweet_id}, Photos: {photos}')
+            logger.info(f'Message: {message.content} in {message.channel.name}, {message.channel.guild.name}, Tweet ID: {tweet_id}, Photos: {photos}')
 
             if photos is None or len(photos) == 0:
                 continue

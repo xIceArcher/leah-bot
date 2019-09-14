@@ -87,7 +87,6 @@ class TwitterStalker(commands.Cog):
         await ctx.channel.send(f'Unstalked {screen_name} (ID: {user_id}) in this channel!')
 
     @commands.command()
-    @commands.is_owner()
     async def stalks(self, ctx):
         stalked_users = []
 
@@ -111,7 +110,8 @@ class TwitterStalker(commands.Cog):
                 for channel_id in self.stalk_destinations[user_id]:
                     channel = self.bot.get_channel(channel_id)
                     await channel.send(get_tweet_url(tweet))
-                    logger.info(f'{get_tweet_url(tweet)} sent to channel {channel_id}')
+                    logger.info(f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
+                                f' in {self.bot.get_channel(channel_id).guild.name}')
 
             else:
                 await asyncio.sleep(1)
