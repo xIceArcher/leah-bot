@@ -16,12 +16,17 @@ logger = logging.getLogger(__name__)
 
 
 class DiscordRepostListener(tweepy.StreamListener):
-    def __init__(self, tweet_queue):
+    def __init__(self, tweet_queue, restart_flag):
         super().__init__()
         self.tweet_queue = tweet_queue
+        self.restart_flag = restart_flag
 
     def on_status(self, tweet):
         self.tweet_queue.put(tweet)
+
+    def on_disconnect(self, notice):
+        logger.info(f"Stream crashed. Notice: {notice}")
+        self.restart_flag.set()
 
 
 class TwitterStalker(commands.Cog):
@@ -150,7 +155,7 @@ class TwitterStalker(commands.Cog):
             await asyncio.sleep(60)
 
     def start_stream(self):
-        self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue)
+        self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue, restart_flag=self.restart_flag)
         self.stream = tweepy.Stream(auth=get_tweepy().auth, listener=self.listener)
         self.stream.filter(follow=list(self.stalk_destinations), is_async=True)
         logger.info(f'Stream started! Now stalking IDs: {list(self.stalk_destinations)}')
