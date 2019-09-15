@@ -37,7 +37,7 @@ def is_quote(tweet):
 
 def is_reply(tweet, user_id_whitelist: list = None):
     if user_id_whitelist:
-        return tweet.in_reply_to_user_id is not None and tweet.in_reply_to_user_id not in user_id_whitelist
+        return tweet.in_reply_to_user_id is not None and tweet.in_reply_to_user_id_str not in user_id_whitelist
 
     return tweet.in_reply_to_user_id is not None and tweet.in_reply_to_user_id != tweet.user.id
 
