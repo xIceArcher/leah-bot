@@ -8,8 +8,8 @@ from threading import Event
 import tweepy
 from discord.ext import commands
 
-from utils.discord_embed_utils import get_tweet_embeds
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, is_reply, extract_video_url
+from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, extract_video_url
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +40,8 @@ class DiscordRepostListener(tweepy.StreamListener):
 
 
 class TwitterStalker(commands.Cog):
-    def __init__(self, bot, retweet_flag=False, reply_flag=False):
+    def __init__(self, bot):
         self.bot = bot
-        self.retweet_flag = retweet_flag
-        self.reply_flag = reply_flag
         self.tweet_queue = Queue()
         self.restart_flag = Event()
         self.listener = None
@@ -129,9 +127,11 @@ class TwitterStalker(commands.Cog):
             user_color = self.colors.get(user.id_str)
 
             if user_color:
-                await ctx.channel.send(f'User {screen_name} (ID: {user.id_str}) has color {hex(user_color)}')
+                await ctx.channel.send(embed=get_color_embed(
+                    message=f'User @{screen_name} (ID: {user.id_str}) has color {hex(user_color)}',
+                    color=user_color))
             else:
-                await ctx.channel.send(f'User {screen_name} (ID: {user.id_str}) has no color')
+                await ctx.channel.send(f'User @{screen_name} (ID: {user.id_str}) has no color')
         else:
             try:
                 user_color = int(hex_code, 16)
@@ -142,7 +142,9 @@ class TwitterStalker(commands.Cog):
             self.colors[user.id_str] = user_color
             self.save_colors()
 
-            await ctx.channel.send(f'User {screen_name} (ID: {user.id_str}) now has color {hex(user_color)}')
+            await ctx.channel.send(embed=get_color_embed(
+                message=f'User @{screen_name} (ID: {user.id_str}) now has color {hex(user_color)}',
+                color=user_color))
 
     async def discord_poster(self):
         await self.bot.wait_until_ready()
@@ -151,10 +153,7 @@ class TwitterStalker(commands.Cog):
             if not self.tweet_queue.empty():
                 tweet = self.tweet_queue.get()
 
-                if is_retweet(tweet) and not self.retweet_flag:
-                    continue
-
-                if is_reply(tweet, user_id_whitelist=list(self.stalk_destinations)) and not self.reply_flag:
+                if is_retweet(tweet):
                     continue
 
                 user_id = tweet.user.id_str

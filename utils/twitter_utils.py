@@ -35,11 +35,8 @@ def is_quote(tweet):
     return hasattr(tweet, 'quoted_status')
 
 
-def is_reply(tweet, user_id_whitelist: list = None):
-    if user_id_whitelist:
-        return tweet.in_reply_to_user_id is not None and tweet.in_reply_to_user_id_str not in user_id_whitelist
-
-    return tweet.in_reply_to_user_id is not None and tweet.in_reply_to_user_id != tweet.user.id
+def is_reply(tweet):
+    return tweet.in_reply_to_user_id is not None
 
 
 def extract_text(tweet):
@@ -59,7 +56,7 @@ def extract_text(tweet):
 
     try:
         for media in tweet.extended_entities['media']:
-            text = text.replace(media['url'], "")
+            text = text.replace(media['url'], '')
     except AttributeError:
         pass
 

@@ -1,7 +1,8 @@
 import discord
 from discord import Embed
 
-from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, get_tweet
+from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, get_tweet, is_reply, \
+    get_user
 
 
 def get_tweet_embeds(tweet_id: int, color: int = None):
@@ -25,15 +26,18 @@ def get_tweet_embeds(tweet_id: int, color: int = None):
 
 
 def get_main_tweet_embed(tweet, color: int = None):
-    if color:
-        embed = Embed(title=f'Tweet by {tweet.user.name}',
-                      description=extract_text(tweet),
-                      url=get_tweet_url(tweet),
-                      color=color)
+    embed = Embed(url=get_tweet_url(tweet))
+
+    if is_reply(tweet):
+        replied_user = get_user(screen_name=tweet.in_reply_to_screen_name)
+        embed.title = f'Reply to {replied_user.name} (@{tweet.in_reply_to_screen_name})'
+        embed.description = extract_text(tweet).replace(f'@{tweet.in_reply_to_screen_name}', '')
     else:
-        embed = Embed(title=f'Tweet by {tweet.user.name}',
-                      description=extract_text(tweet),
-                      url=get_tweet_url(tweet))
+        embed.title = f'Tweet by {tweet.user.name}'
+        embed.description = extract_text(tweet)
+
+    if color:
+        embed.colour = color
 
     embed.set_author(name=f'{tweet.user.name} (@{tweet.user.screen_name})',
                      url=get_profile_url(tweet.user),
@@ -49,6 +53,10 @@ def get_main_tweet_embed(tweet, color: int = None):
 
 def get_photo_embed(url: str, color: int = None):
     return Embed(color=color).set_image(url=url) if color else Embed().set_image(url=url)
+
+
+def get_color_embed(message: str, color: int):
+    return Embed(description=message, color=color)
 
 
 def add_tweet_footer(self: discord.Embed, tweet):
