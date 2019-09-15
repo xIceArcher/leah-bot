@@ -162,13 +162,14 @@ class TwitterStalker(commands.Cog):
                 if user_id not in self.stalk_destinations:
                     continue
 
+                embeds = get_tweet_embeds(tweet_id=tweet.id, color=self.colors.get(tweet.user.id_str))
+                video = extract_video_url(tweet)
+
                 for channel_id in self.stalk_destinations[user_id]:
                     channel = self.bot.get_channel(channel_id)
 
-                    for embed in get_tweet_embeds(tweet_id=tweet.id, color=self.colors.get(tweet.user.id_str)):
+                    for embed in embeds:
                         await channel.send(embed=embed)
-
-                    video = extract_video_url(tweet)
 
                     if video:
                         await channel.send(video)
