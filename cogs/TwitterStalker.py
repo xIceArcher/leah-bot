@@ -51,7 +51,8 @@ class TwitterStalker(commands.Cog):
         self.stalk_destinations = {}
         self.colors = {}
 
-        self.load_json()
+        self.load_destinations()
+        self.load_colors()
 
         self.start_stream()
         asyncio.run_coroutine_threadsafe(self.discord_poster(), bot.loop)
@@ -65,7 +66,7 @@ class TwitterStalker(commands.Cog):
         if not user:
             await ctx.channel.send(f'{screen_name} is not a valid Twitter username!')
 
-        user_id = str(user.id)
+        user_id = user.id_str
 
         if user_id not in self.stalk_destinations:
             self.stalk_destinations[user_id] = []
@@ -114,6 +115,35 @@ class TwitterStalker(commands.Cog):
         for embed in get_tweet_embeds(tweet_id=tweet_id):
             await ctx.channel.send(embed=embed)
 
+    @commands.command()
+    @commands.is_owner()
+    async def restart(self, ctx):
+        self.restart_flag.set()
+
+    @commands.command()
+    @commands.is_owner()
+    async def color(self, ctx, screen_name: str, hex_code: str = None):
+        user = get_user(screen_name=screen_name)
+
+        if not hex_code:
+            user_color = self.colors.get(user.id_str)
+
+            if user_color:
+                await ctx.channel.send(f'User {screen_name} (ID: {user.id_str}) has color {hex(user_color)}')
+            else:
+                await ctx.channel.send(f'User {screen_name} (ID: {user.id_str}) has no color')
+        else:
+            try:
+                user_color = int(hex_code, 16)
+            except ValueError:
+                await ctx.channel.send('Invalid hex code!')
+                return
+
+            self.colors[user.id_str] = user_color
+            self.save_colors()
+
+            await ctx.channel.send(f'User {screen_name} (ID: {user.id_str}) now has color {hex(user_color)}')
+
     async def discord_poster(self):
         await self.bot.wait_until_ready()
 
@@ -154,7 +184,7 @@ class TwitterStalker(commands.Cog):
             if self.restart_flag.is_set():
                 self.kill_stream()
                 self.start_stream()
-                self.save_json()
+                self.save_destinations()
                 self.restart_flag.clear()
 
             await asyncio.sleep(60)
@@ -175,20 +205,27 @@ class TwitterStalker(commands.Cog):
         self.kill_stream()
         self.start_stream()
 
-    def load_json(self):
-        stalk_path = os.path.join(os.getcwd(), 'data', 'tweets.json')
-        with open(stalk_path) as f:
+    def load_destinations(self):
+        path = os.path.join(os.getcwd(), 'data', 'tweets.json')
+        with open(path) as f:
             self.stalk_destinations = json.load(f)
 
-        colors_path = os.path.join(os.getcwd(), 'data', 'colors.json')
-        with open(colors_path) as f:
+    def load_colors(self):
+        path = os.path.join(os.getcwd(), 'data', 'colors.json')
+        with open(path) as f:
             self.colors = json.load(f)
 
-    def save_json(self):
+    def save_destinations(self):
         path = os.path.join(os.getcwd(), 'data', 'tweets.json')
         with open(path, 'w') as f:
             f.seek(0)
             json.dump(self.stalk_destinations, f, indent=4)
+
+    def save_colors(self):
+        path = os.path.join(os.getcwd(), 'data', 'colors.json')
+        with open(path, 'w') as f:
+            f.seek(0)
+            json.dump(self.colors, f, indent=4)
 
     def cog_unload(self):
         self.kill_stream()
