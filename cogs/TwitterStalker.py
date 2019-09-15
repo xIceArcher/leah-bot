@@ -9,7 +9,7 @@ import tweepy
 from discord.ext import commands
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, extract_video_url
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, extract_video_url, is_reply
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +80,10 @@ class TwitterStalker(commands.Cog):
             await ctx.channel.send(f'{screen_name} (ID: {user_id}) is already being stalked in this channel!')
             return
 
-        if str(ctx.channel.id) not in self.stalk_users:
-            self.stalk_users[str(ctx.channel.id)] = []
+        if ctx.channel.id not in self.stalk_users:
+            self.stalk_users[ctx.channel.id] = []
 
-        self.stalk_users[str(ctx.channel.id)].append(user_id)
+        self.stalk_users[ctx.channel.id].append(user_id)
 
     @commands.command()
     @commands.is_owner()
@@ -94,7 +94,7 @@ class TwitterStalker(commands.Cog):
             await ctx.channel.send(f'{screen_name} is not a valid Twitter username!')
             return
 
-        user_id = str(user.id)
+        user_id = user.id_str
 
         if user_id not in self.stalk_destinations or ctx.channel.id not in self.stalk_destinations[user_id]:
             await ctx.channel.send(f'{screen_name} (ID: {user_id}) is not being stalked in this channel!')
@@ -108,14 +108,14 @@ class TwitterStalker(commands.Cog):
 
         await ctx.channel.send(f'Unstalked {screen_name} (ID: {user_id}) in this channel!')
 
-        self.stalk_users[str(ctx.channel.id)].remove(user_id)
+        self.stalk_users[ctx.channel.id].remove(user_id)
 
-        if not self.stalk_users[str(ctx.channel.id)]:
-            del self.stalk_users[str(ctx.channel.id)]
+        if not self.stalk_users[ctx.channel.id]:
+            del self.stalk_users[ctx.channel.id]
 
     @commands.command()
     async def stalks(self, ctx):
-        stalk_names = [f'@{get_user(user_id=user_id).screen_name}' for user_id in self.stalk_users[str(ctx.channel.id)]]
+        stalk_names = [f'@{get_user(user_id=user_id).screen_name}' for user_id in self.stalk_users[ctx.channel.id]]
         await ctx.channel.send(f'Users stalked in this channel: {", ".join(stalk_names)}')
 
     @commands.command()
@@ -176,6 +176,9 @@ class TwitterStalker(commands.Cog):
                 video = extract_video_url(tweet)
 
                 for channel_id in self.stalk_destinations[user_id]:
+                    if is_reply(tweet) and tweet.in_reply_to_user_id_str not in self.stalk_users[channel_id]:
+                        continue
+
                     channel = self.bot.get_channel(channel_id)
 
                     for embed in embeds:
@@ -241,10 +244,10 @@ class TwitterStalker(commands.Cog):
     def setup_stalked_users(self):
         for user_id in self.stalk_destinations:
             for channel_id in self.stalk_destinations[user_id]:
-                if str(channel_id) not in self.stalk_users:
-                    self.stalk_users[str(channel_id)] = []
+                if channel_id not in self.stalk_users:
+                    self.stalk_users[channel_id] = []
 
-                self.stalk_users[str(channel_id)].append(user_id)
+                self.stalk_users[channel_id].append(user_id)
 
     def cog_unload(self):
         self.kill_stream()
