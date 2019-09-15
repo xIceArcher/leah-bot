@@ -33,5 +33,5 @@ def get_tweet_embed(id: int, color: int = None):
     return embed
 
 
-def get_photo_embed(url):
-    return Embed().set_image(url=url)
+def get_photo_embed(url: str, color: int = None):
+    return Embed(color=color).set_image(url=url) if color else Embed().set_image(url=url)

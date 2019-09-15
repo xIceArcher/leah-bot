@@ -138,8 +138,9 @@ class TwitterStalker(commands.Cog):
 
     async def send_tweet(self, channel, short_tweet):
         tweet = get_tweet(short_tweet.id)
+        color = self.colors.get(tweet.user.id_str)
 
-        await channel.send(embed=get_tweet_embed(tweet.id, color=self.colors.get(tweet.user.id_str)))
+        await channel.send(embed=get_tweet_embed(tweet.id, color=color))
 
         photos = extract_photo_urls(tweet)
 
@@ -150,7 +151,7 @@ class TwitterStalker(commands.Cog):
 
         if photos:
             for photo in photos:
-                await channel.send(embed=get_photo_embed(photo))
+                await channel.send(embed=get_photo_embed(photo, color=color))
 
         video = extract_video_url(tweet)
 
