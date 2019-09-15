@@ -47,10 +47,12 @@ class TwitterStalker(commands.Cog):
         self.listener = None
         self.stream = None
         self.stalk_destinations = {}
+        self.stalk_users = {}
         self.colors = {}
 
         self.load_destinations()
         self.load_colors()
+        self.setup_stalked_users()
 
         self.start_stream()
         asyncio.run_coroutine_threadsafe(self.discord_poster(), bot.loop)
@@ -63,6 +65,7 @@ class TwitterStalker(commands.Cog):
 
         if not user:
             await ctx.channel.send(f'{screen_name} is not a valid Twitter username!')
+            return
 
         user_id = user.id_str
 
@@ -75,6 +78,12 @@ class TwitterStalker(commands.Cog):
             await ctx.channel.send(f'Stalked {screen_name} (ID: {user_id}) in this channel!')
         else:
             await ctx.channel.send(f'{screen_name} (ID: {user_id}) is already being stalked in this channel!')
+            return
+
+        if str(ctx.channel.id) not in self.stalk_users:
+            self.stalk_users[str(ctx.channel.id)] = []
+
+        self.stalk_users[str(ctx.channel.id)].append(user_id)
 
     @commands.command()
     @commands.is_owner()
@@ -83,29 +92,31 @@ class TwitterStalker(commands.Cog):
 
         if not user:
             await ctx.channel.send(f'{screen_name} is not a valid Twitter username!')
+            return
 
         user_id = str(user.id)
 
         if user_id not in self.stalk_destinations or ctx.channel.id not in self.stalk_destinations[user_id]:
             await ctx.channel.send(f'{screen_name} (ID: {user_id}) is not being stalked in this channel!')
+            return
 
         self.stalk_destinations[user_id].remove(ctx.channel.id)
 
-        if len(self.stalk_destinations[user_id]) == 0:
+        if not self.stalk_destinations[user_id]:
             del self.stalk_destinations[user_id]
             self.restart_flag.set()
 
         await ctx.channel.send(f'Unstalked {screen_name} (ID: {user_id}) in this channel!')
 
+        self.stalk_users[str(ctx.channel.id)].remove(user_id)
+
+        if not self.stalk_users[str(ctx.channel.id)]:
+            del self.stalk_users[str(ctx.channel.id)]
+
     @commands.command()
     async def stalks(self, ctx):
-        stalked_users = []
-
-        for user_id in self.stalk_destinations:
-            if ctx.channel.id in self.stalk_destinations[user_id]:
-                stalked_users.append(f'@{get_user(user_id=user_id).screen_name}')
-
-        await ctx.channel.send(f'Users stalked in this channel: {", ".join(stalked_users)}')
+        stalk_names = [f'@{get_user(user_id=user_id).screen_name}' for user_id in self.stalk_users[str(ctx.channel.id)]]
+        await ctx.channel.send(f'Users stalked in this channel: {", ".join(stalk_names)}')
 
     @commands.command()
     @commands.is_owner()
@@ -226,6 +237,14 @@ class TwitterStalker(commands.Cog):
         with open(path, 'w') as f:
             f.seek(0)
             json.dump(self.colors, f, indent=4)
+
+    def setup_stalked_users(self):
+        for user_id in self.stalk_destinations:
+            for channel_id in self.stalk_destinations[user_id]:
+                if str(channel_id) not in self.stalk_users:
+                    self.stalk_users[str(channel_id)] = []
+
+                self.stalk_users[str(channel_id)].append(user_id)
 
     def cog_unload(self):
         self.kill_stream()
