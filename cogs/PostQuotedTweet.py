@@ -3,7 +3,8 @@ import logging
 from discord.ext import commands
 from tweepy import TweepError
 
-from utils.twitter_utils import get_tweet, is_quote, get_tweet_url
+from utils.discord_embed_utils import get_tweet_embeds
+from utils.twitter_utils import get_tweet, is_quote, get_tweet_url, extract_video_url
 from utils.url_utils import get_tweet_ids
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,14 @@ class PostQuotedTweet(commands.Cog):
             await ctx.channel.send(f'Tweet ID {tweet_id} is not valid!')
 
         if is_quote(tweet):
-            await ctx.channel.send(f'Quoted Tweet: {get_tweet_url(tweet.quoted_status)}')
+            for embed in get_tweet_embeds(tweet_id=tweet.quoted_status.id):
+                await ctx.channel.send(embed=embed)
+
+            video = extract_video_url(tweet.quoted_status)
+
+            if video:
+                await ctx.channel.send(video)
+
             logger.info(f'Tweet ID: {tweet_id}, Quoted Tweet: {get_tweet_url(tweet.quoted_status)}')
         else:
             await ctx.channel.send(f'This tweet does not quote any other tweet!')
