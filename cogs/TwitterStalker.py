@@ -8,9 +8,8 @@ from threading import Event
 import tweepy
 from discord.ext import commands
 
-from utils.discord_embed_utils import get_tweet_embed, get_photo_embed
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, is_reply, get_tweet, \
-    extract_photo_urls, extract_video_url
+from utils.discord_embed_utils import get_tweet_embeds
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, is_reply, extract_video_url
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +108,12 @@ class TwitterStalker(commands.Cog):
 
         await ctx.channel.send(f'Users stalked in this channel: {", ".join(stalked_users)}')
 
+    @commands.command()
+    @commands.is_owner()
+    async def embed(self, ctx, tweet_id: int):
+        for embed in get_tweet_embeds(tweet_id=tweet_id):
+            await ctx.channel.send(embed=embed)
+
     async def discord_poster(self):
         await self.bot.wait_until_ready()
 
@@ -122,41 +127,27 @@ class TwitterStalker(commands.Cog):
                 if is_reply(tweet, user_id_whitelist=list(self.stalk_destinations)) and not self.reply_flag:
                     continue
 
-                user_id = str(tweet.user.id)
+                user_id = tweet.user.id_str
 
                 if user_id not in self.stalk_destinations:
                     continue
 
                 for channel_id in self.stalk_destinations[user_id]:
                     channel = self.bot.get_channel(channel_id)
-                    await self.send_tweet(channel, tweet)
+
+                    for embed in get_tweet_embeds(tweet_id=tweet.id, color=self.colors.get(tweet.user.id_str)):
+                        await channel.send(embed=embed)
+
+                    video = extract_video_url(tweet)
+
+                    if video:
+                        await channel.send(video)
+
                     logger.info(f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
                                 f' in {self.bot.get_channel(channel_id).guild.name}')
 
             else:
                 await asyncio.sleep(1)
-
-    async def send_tweet(self, channel, short_tweet):
-        tweet = get_tweet(short_tweet.id)
-        color = self.colors.get(tweet.user.id_str)
-
-        await channel.send(embed=get_tweet_embed(tweet.id, color=color))
-
-        photos = extract_photo_urls(tweet)
-
-        try:
-            photos.pop(0)
-        except (AttributeError, IndexError):
-            pass
-
-        if photos:
-            for photo in photos:
-                await channel.send(embed=get_photo_embed(photo, color=color))
-
-        video = extract_video_url(tweet)
-
-        if video:
-            await channel.send(video)
 
     async def stream_restarter(self):
         while True:
