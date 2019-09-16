@@ -9,7 +9,7 @@ import tweepy
 from discord.ext import commands
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, extract_video_url, is_reply
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, extract_video_url, is_reply, get_tweet
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ class TwitterStalker(commands.Cog):
                     continue
 
                 embeds = get_tweet_embeds(tweet_id=tweet.id, color=self.colors.get(tweet.user.id_str))
-                video = extract_video_url(tweet)
+                video = extract_video_url(get_tweet(tweet_id=tweet.id))
 
                 for channel_id in self.stalk_destinations[user_id]:
                     if is_reply(tweet) and tweet.in_reply_to_user_id_str not in self.stalk_users[channel_id]:
