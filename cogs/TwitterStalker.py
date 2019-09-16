@@ -121,7 +121,7 @@ class TwitterStalker(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def embed(self, ctx, tweet_id: int):
-        for embed in get_tweet_embeds(tweet_id=tweet_id):
+        for embed in get_tweet_embeds(get_tweet(tweet_id=tweet_id)):
             await ctx.channel.send(embed=embed)
 
     @commands.command()
@@ -162,21 +162,24 @@ class TwitterStalker(commands.Cog):
 
         while True:
             if not self.tweet_queue.empty():
-                tweet = self.tweet_queue.get()
+                short_tweet = self.tweet_queue.get()
 
-                if is_retweet(tweet):
+                if is_retweet(short_tweet):
                     continue
 
-                user_id = tweet.user.id_str
+                user_id = short_tweet.user.id_str
 
                 if user_id not in self.stalk_destinations:
                     continue
 
-                embeds = get_tweet_embeds(tweet_id=tweet.id, color=self.colors.get(tweet.user.id_str))
-                video = extract_video_url(get_tweet(tweet_id=tweet.id))
+                extended_tweet = get_tweet(short_tweet.id)
+
+                embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
+                video = extract_video_url(extended_tweet)
 
                 for channel_id in self.stalk_destinations[user_id]:
-                    if is_reply(tweet) and tweet.in_reply_to_user_id_str not in self.stalk_users[channel_id]:
+                    if is_reply(extended_tweet) and extended_tweet.in_reply_to_user_id_str not in self.stalk_users[
+                        channel_id]:
                         continue
 
                     channel = self.bot.get_channel(channel_id)
@@ -187,7 +190,8 @@ class TwitterStalker(commands.Cog):
                     if video:
                         await channel.send(video)
 
-                    logger.info(f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
+                    logger.info(
+                        f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
                                 f' in {self.bot.get_channel(channel_id).guild.name}')
 
             else:

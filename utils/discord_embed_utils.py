@@ -1,12 +1,11 @@
 import discord
 from discord import Embed
 
-from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, get_tweet, is_reply, \
+from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, is_reply, \
     get_user
 
 
-def get_tweet_embeds(tweet_id: int, color: int = None):
-    tweet = get_tweet(tweet_id)
+def get_tweet_embeds(tweet, color: int = None):
     embeds = [get_main_tweet_embed(tweet, color)]
 
     photo_urls = extract_photo_urls(tweet)

@@ -29,7 +29,9 @@ class PostQuotedTweet(commands.Cog):
             await ctx.channel.send(f'Tweet ID {tweet_id} is not valid!')
 
         if is_quote(tweet):
-            for embed in get_tweet_embeds(tweet_id=tweet.quoted_status.id):
+            quoted_tweet = get_tweet(tweet.quoted_status.id)
+
+            for embed in get_tweet_embeds(quoted_tweet):
                 await ctx.channel.send(embed=embed)
 
             video = extract_video_url(tweet.quoted_status)
