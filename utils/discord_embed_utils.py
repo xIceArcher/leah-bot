@@ -62,7 +62,7 @@ def get_reply_tweet_embed(tweet):
     replied_user = get_user(screen_name=tweet.in_reply_to_screen_name)
 
     return Embed(url=get_tweet_url(tweet),
-                 title=f'Reply to {replied_user.name}',
+                 title=f'Reply to {replied_user.name} (@{replied_user.screen_name})',
                  description=extract_text(tweet).replace(f'@{replied_user.screen_name}', ''))
 
 
@@ -73,7 +73,7 @@ def get_quoted_tweet_embed(tweet):
                   title=f'Tweet by {tweet.user.name}',
                   description=extract_text(tweet).replace(get_tweet_url(quoted_tweet).lower(), ''))
 
-    author_info = f'[Quoted tweet by {quoted_tweet.user.name}]({get_tweet_url(quoted_tweet)})\n'
+    author_info = f'[Quoted tweet by {quoted_tweet.user.name} (@{quoted_tweet.user.screen_name})]({get_tweet_url(quoted_tweet)})\n'
 
     embed.add_field(name=f'Quote',
                     value=author_info + extract_text(quoted_tweet),
@@ -91,7 +91,7 @@ def get_retweet_embed(tweet):
     retweet = tweet.retweeted_status
 
     embed = Embed(url=get_tweet_url(tweet),
-                  title=f'Retweeted {retweet.user.name}',
+                  title=f'Retweeted {retweet.user.name} (@{retweet.user.screen_name})',
                   description=extract_text(retweet))
 
     photo_urls = extract_photo_urls(retweet)
