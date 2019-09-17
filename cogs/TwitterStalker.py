@@ -9,7 +9,7 @@ import tweepy
 from discord.ext import commands
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_retweet, extract_video_url, is_reply, get_tweet
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, extract_video_url, is_reply, get_tweet
 
 logger = logging.getLogger(__name__)
 
@@ -164,9 +164,6 @@ class TwitterStalker(commands.Cog):
             if not self.tweet_queue.empty():
                 short_tweet = self.tweet_queue.get()
 
-                if is_retweet(short_tweet):
-                    continue
-
                 user_id = short_tweet.user.id_str
 
                 if user_id not in self.stalk_destinations:
@@ -192,7 +189,7 @@ class TwitterStalker(commands.Cog):
 
                     logger.info(
                         f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
-                                f' in {self.bot.get_channel(channel_id).guild.name}')
+                        f' in {self.bot.get_channel(channel_id).guild.name}')
 
             else:
                 await asyncio.sleep(1)

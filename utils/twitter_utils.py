@@ -39,6 +39,10 @@ def is_reply(tweet):
     return tweet.in_reply_to_user_id is not None
 
 
+def is_standard(tweet):
+    return not is_retweet(tweet) and not is_quote(tweet) and not is_reply(tweet)
+
+
 def extract_text(tweet):
     if is_retweet(tweet):
         try:
