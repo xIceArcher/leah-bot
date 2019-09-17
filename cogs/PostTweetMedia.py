@@ -33,17 +33,18 @@ class PostTweetMedia(commands.Cog):
 
             photos.pop(0)
 
-            logger.info(
-                f'Message: {message.content} in {message.channel.name}, {message.channel.guild.name}, Tweet ID: {tweet_id}, Photos: {photos}')
+            if photos:
+                logger.info(
+                    f'Message: {message.content} in {message.channel.name}, {message.channel.guild.name}, Tweet ID: {tweet_id}, Photos: {photos}')
 
-            for photo in photos:
-                if sent_media_count >= MAX_MEDIA_COUNT:
-                    await message.channel.send('ツイートメディアは遊びじゃない！')
-                    return
+                for photo in photos:
+                    if sent_media_count >= MAX_MEDIA_COUNT:
+                        await message.channel.send('ツイートメディアは遊びじゃない！')
+                        return
 
-                if cleaned_message.find(get_photo_id(photo)) == -1:
-                    sent_media_count += 1
-                    await message.channel.send(embed=get_photo_embed(photo))
+                    if cleaned_message.find(get_photo_id(photo)) == -1:
+                        sent_media_count += 1
+                        await message.channel.send(embed=get_photo_embed(photo))
 
     @commands.command()
     async def photos(self, ctx, twitter_url: str):
