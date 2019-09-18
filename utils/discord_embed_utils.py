@@ -1,3 +1,5 @@
+import re
+
 import discord
 from discord import Embed
 
@@ -63,7 +65,7 @@ def get_reply_tweet_embed(tweet):
 
     return Embed(url=get_tweet_url(tweet),
                  title=f'Reply to {replied_user.name} (@{replied_user.screen_name})',
-                 description=extract_text(tweet).replace(f'@{replied_user.screen_name}', ''))
+                 description=re.sub(f'@{replied_user.screen_name}', '', extract_text(tweet), flags=re.IGNORECASE))
 
 
 def get_quoted_tweet_embed(tweet):
@@ -71,7 +73,7 @@ def get_quoted_tweet_embed(tweet):
 
     embed = Embed(url=get_tweet_url(tweet),
                   title=f'Tweet by {tweet.user.name}',
-                  description=extract_text(tweet).replace(get_tweet_url(quoted_tweet).lower(), ''))
+                  description=re.sub(get_tweet_url(quoted_tweet), '', extract_text(tweet), flags=re.IGNORECASE))
 
     author_info = f'[Quoted tweet by {quoted_tweet.user.name} (@{quoted_tweet.user.screen_name})]({get_tweet_url(quoted_tweet)})\n'
 
