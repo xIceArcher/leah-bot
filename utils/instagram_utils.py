@@ -12,7 +12,6 @@ def get_insta_photo_urls(url: str):
     # Get rid of 'window._sharedData =' at front and ';' at back
     start = raw_text.find('=')
     end = raw_text.rfind(';')
-    print(raw_text[start + 1:end])
 
     js = json.loads(raw_text[start + 1:end])
 
