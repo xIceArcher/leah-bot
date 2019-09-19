@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 
 def get_tweet_ids(s: str):
-    regex = re.compile(r'(?:http[s]?://)?twitter.com/[^/]*/status/([0-9]*)(?:\?[^ \r\n]*)?')
+    regex = re.compile(r'(?:http[s]?://)?twitter\.com/[^/]*/status/([0-9]*)(?:\?[^ \r\n]*)?')
     return list(OrderedDict.fromkeys(regex.findall(s)))
 
 
@@ -16,3 +16,8 @@ def get_photo_url(url: str, size='orig'):
     base = url[:url.rfind('.')]
 
     return f'{base}?format={extension}&name={size}'
+
+
+def get_insta_links(s: str):
+    regex = re.compile(r'http[s]?://(?:w{3})?\.instagram\.com/p/[A-Za-z0-9]*/?(?:\?[^ \r\n]*)?')
+    return list(OrderedDict.fromkeys(regex.findall(s)))

@@ -7,7 +7,8 @@ from utils.credentials_utils import get_credentials
 formatter = '%(name)s : %(asctime)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=formatter)
 
-active_extensions = ['cogs.Admin', 'cogs.PostTweetMedia', 'cogs.PostQuotedTweet', 'cogs.TwitterStalker']
+active_extensions = ['cogs.Admin', 'cogs.PostTweetMedia', 'cogs.PostQuotedTweet', 'cogs.TwitterStalker',
+                     'cogs.PostInstaMedia']
 
 
 def main():

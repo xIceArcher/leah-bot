@@ -46,6 +46,8 @@ class PostTweetMedia(commands.Cog):
                         sent_media_count += 1
                         await message.channel.send(embed=get_photo_embed(photo))
 
+            await self.bot.process_commands(message)
+
     @commands.command()
     async def photos(self, ctx, twitter_url: str):
         tweet_ids = get_tweet_ids(twitter_url)
