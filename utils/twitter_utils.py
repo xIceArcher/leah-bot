@@ -97,8 +97,21 @@ def get_tweet_url(tweet):
     return f'https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}'
 
 
-def get_profile_url(user):
-    return f'https://twitter.com/{user.screen_name}'
+def get_profile_url(user=None, screen_name=None):
+    if not screen_name and not user:
+        raise ValueError('At least one argument required')
+
+    if user:
+        return f'https://twitter.com/{user.screen_name}'
+
+    return f'https://twitter.com/{screen_name}'
+
+
+def get_hashtag_url(hashtag: str):
+    if hashtag.startswith('#'):
+        return f'https://twitter.com/hashtag/{hashtag[1:]}'
+
+    return f'https://twitter.com/hashtag/{hashtag}'
 
 
 def get_tweet(tweet_id: int):

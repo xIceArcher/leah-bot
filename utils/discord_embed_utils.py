@@ -4,7 +4,7 @@ import discord
 from discord import Embed
 
 from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, is_reply, \
-    get_user, is_quote, is_retweet, is_standard
+    get_user, is_quote, is_retweet, is_standard, get_hashtag_url
 
 
 def get_tweet_embeds(tweet, color: int = None):
@@ -39,6 +39,8 @@ def get_main_tweet_embed(tweet, color: int = None):
 
     if color:
         embed.colour = color
+
+    embed.description = populate_links(embed.description)
 
     embed.set_author(name=f'{tweet.user.name} (@{tweet.user.screen_name})',
                      url=get_profile_url(tweet.user),
@@ -75,10 +77,14 @@ def get_quoted_tweet_embed(tweet):
                   title=f'Tweet by {tweet.user.name}',
                   description=re.sub(get_tweet_url(quoted_tweet), '', extract_text(tweet), flags=re.IGNORECASE))
 
-    author_info = f'[Quoted tweet by {quoted_tweet.user.name} (@{quoted_tweet.user.screen_name})]({get_tweet_url(quoted_tweet)})\n'
+    author_text = f'Quoted tweet by {quoted_tweet.user.name} (@{quoted_tweet.user.screen_name})'
+    quoted_link = get_tweet_url(quoted_tweet)
+    author_info = get_named_link(author_text, quoted_link) + '\n'
+
+    quoted_text = extract_text(quoted_tweet)
 
     embed.add_field(name=f'Quote',
-                    value=author_info + extract_text(quoted_tweet),
+                    value=author_info + populate_links(quoted_text),
                     inline=False)
 
     photo_urls = extract_photo_urls(quoted_tweet)
@@ -110,6 +116,35 @@ def get_photo_embed(url: str, color: int = None):
 
 def get_color_embed(message: str, color: int):
     return Embed(description=message, color=color)
+
+
+def get_named_link(text: str, link: str):
+    return f'[{text}]({link})'
+
+
+def replace_mention_with_link(text: str):
+    mentions = re.findall(r'@[^ \r\n]*', text)
+
+    for mention in mentions:
+        text = text.replace(mention, get_named_link(mention, get_profile_url(screen_name=mention[1:])))
+
+    return text
+
+
+def replace_hashtag_with_link(text: str):
+    hashtags = re.findall(r'#[^ \r\n]*', text)
+
+    for hashtag in hashtags:
+        text = text.replace(hashtag, get_named_link(hashtag, get_hashtag_url(hashtag)))
+
+    return text
+
+
+def populate_links(text: str):
+    text = replace_mention_with_link(text)
+    text = replace_hashtag_with_link(text)
+
+    return text
 
 
 def add_tweet_footer(self: discord.Embed, tweet):
