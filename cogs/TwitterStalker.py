@@ -6,6 +6,7 @@ from queue import Queue
 from threading import Event, Thread
 
 import tweepy
+from aiohttp import ClientConnectorError
 from discord.ext import commands
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
@@ -165,34 +166,40 @@ class TwitterStalker(commands.Cog):
         while True:
             if not self.tweet_queue.empty():
                 short_tweet = self.tweet_queue.get()
-
                 user_id = short_tweet.user.id_str
 
                 if user_id not in self.stalk_destinations:
                     continue
 
-                extended_tweet = get_tweet(short_tweet.id)
+                try:
+                    extended_tweet = get_tweet(short_tweet.id)
 
-                embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
-                video = extract_video_url(extended_tweet)
+                    embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
+                    video = extract_video_url(extended_tweet)
 
-                for channel_id in self.stalk_destinations[user_id]:
-                    if is_reply(extended_tweet) and extended_tweet.in_reply_to_user_id_str not in self.stalk_users[
-                        channel_id]:
-                        continue
+                    for channel_id in self.stalk_destinations[user_id]:
+                        if is_reply(extended_tweet) and extended_tweet.in_reply_to_user_id_str not in self.stalk_users[
+                            channel_id]:
+                            continue
 
-                    channel = self.bot.get_channel(channel_id)
+                        channel = self.bot.get_channel(channel_id)
 
-                    for embed in embeds:
-                        await channel.send(embed=embed)
+                        try:
+                            for embed in embeds:
+                                await channel.send(embed=embed)
 
-                    if video:
-                        await channel.send(video)
+                            if video:
+                                await channel.send(video)
+                        except ClientConnectorError:
+                            self.tweet_queue.put(short_tweet)
+                            logger.info(f'Could not connect to client, requeueing tweet {short_tweet.id}')
+                            break
 
-                    logger.info(
-                        f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
-                        f' in {self.bot.get_channel(channel_id).guild.name}')
-
+                        logger.info(
+                            f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
+                            f' in {self.bot.get_channel(channel_id).guild.name}')
+                except Exception as e:
+                    logger.exception(e)
             else:
                 await asyncio.sleep(1)
 
