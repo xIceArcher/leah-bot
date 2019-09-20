@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from queue import Queue
-from threading import Event
+from threading import Event, Thread
 
 import tweepy
 from discord.ext import commands
@@ -46,6 +46,7 @@ class TwitterStalker(commands.Cog):
         self.restart_flag = Event()
         self.listener = None
         self.stream = None
+        self.stream_thread = None
         self.stalk_destinations = {}
         self.stalk_users = {}
         self.colors = {}
@@ -196,7 +197,7 @@ class TwitterStalker(commands.Cog):
 
     async def stream_restarter(self):
         while True:
-            if self.restart_flag.is_set():
+            if self.restart_flag.is_set() or not self.stream_thread.is_alive():
                 self.kill_stream()
                 self.start_stream()
                 self.save_destinations()
@@ -207,12 +208,27 @@ class TwitterStalker(commands.Cog):
     def start_stream(self):
         self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue, restart_flag=self.restart_flag)
         self.stream = tweepy.Stream(auth=get_tweepy().auth, listener=self.listener)
-        self.stream.filter(follow=list(self.stalk_destinations), is_async=True)
+        self.stream_thread = Thread(target=self.start_stream_thread)
+
+        self.stream_thread.start()
         logger.info(f'Stream started! Now stalking IDs: {list(self.stalk_destinations)}')
+
+    def start_stream_thread(self):
+        try:
+            self.stream.filter(follow=list(self.stalk_destinations))
+        except Exception as e:
+            logger.exception(e)
+        finally:
+            logger.info('Stream crashed')
+            self.restart_flag.set()
 
     def kill_stream(self):
         self.listener = None
-        self.stream.disconnect()
+
+        if self.stream():
+            self.stream.disconnect()
+        self.stream_thread.join()
+
         self.stream = None
         logger.info('Stream killed!')
 
