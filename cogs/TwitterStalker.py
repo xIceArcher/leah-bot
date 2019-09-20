@@ -35,7 +35,7 @@ class DiscordRepostListener(tweepy.StreamListener):
         self.restart_flag.set()
 
     def on_disconnect(self, notice):
-        logger.info(f'Stream crashed. Notice: {notice}')
+        logger.info(f'Stream disconnected. Notice: {notice}')
         self.restart_flag.set()
 
 
@@ -129,6 +129,7 @@ class TwitterStalker(commands.Cog):
     @commands.is_owner()
     async def restart(self, ctx):
         self.restart_flag.set()
+        await ctx.channel.send('Restart flag set!')
 
     @commands.command()
     @commands.is_owner()
@@ -197,11 +198,13 @@ class TwitterStalker(commands.Cog):
 
     async def stream_restarter(self):
         while True:
-            if self.restart_flag.is_set() or not self.stream_thread.is_alive():
+            if self.restart_flag.is_set():
+                logger.info('Restarting stream......')
                 self.kill_stream()
                 self.start_stream()
                 self.save_destinations()
                 self.restart_flag.clear()
+                logger.info('Stream restarted!')
 
             await asyncio.sleep(60)
 
@@ -209,7 +212,6 @@ class TwitterStalker(commands.Cog):
         self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue, restart_flag=self.restart_flag)
         self.stream = tweepy.Stream(auth=get_tweepy().auth, listener=self.listener)
         self.stream_thread = Thread(target=self.start_stream_thread)
-
         self.stream_thread.start()
         logger.info(f'Stream started! Now stalking IDs: {list(self.stalk_destinations)}')
 
@@ -217,15 +219,16 @@ class TwitterStalker(commands.Cog):
         try:
             self.stream.filter(follow=list(self.stalk_destinations))
         except Exception as e:
+            logger.info('Stream crashed')
             logger.exception(e)
         finally:
-            logger.info('Stream crashed')
             self.restart_flag.set()
+            logger.info('Stream terminated, awaiting restart...')
 
     def kill_stream(self):
         self.listener = None
 
-        if self.stream():
+        if self.stream:
             self.stream.disconnect()
         self.stream_thread.join()
 
