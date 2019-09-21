@@ -123,7 +123,7 @@ def get_named_link(text: str, link: str):
 
 
 def replace_mention_with_link(text: str):
-    mentions = re.findall(r'@[^ \r\n]*', text)
+    mentions = re.findall(r'@[^ \r\n]+', text)
 
     for mention in mentions:
         text = text.replace(mention, get_named_link(mention, get_profile_url(screen_name=mention[1:])))
@@ -132,7 +132,7 @@ def replace_mention_with_link(text: str):
 
 
 def replace_hashtag_with_link(text: str):
-    hashtags = re.findall(r'#[^ \r\n]*', text)
+    hashtags = re.findall(r'#[^ \r\n]+', text)
 
     for hashtag in hashtags:
         text = text.replace(hashtag, get_named_link(hashtag, get_hashtag_url(hashtag)))
