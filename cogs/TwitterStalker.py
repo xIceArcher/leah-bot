@@ -8,6 +8,7 @@ from threading import Event, Thread
 import tweepy
 from aiohttp import ClientConnectorError
 from discord.ext import commands
+from tweepy import TweepError
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, extract_video_url, is_reply, get_tweet
@@ -172,7 +173,13 @@ class TwitterStalker(commands.Cog):
                     continue
 
                 try:
-                    extended_tweet = get_tweet(short_tweet.id)
+                    try:
+                        extended_tweet = get_tweet(short_tweet.id)
+                    except TweepError as e:
+                        self.tweet_queue.put(short_tweet)
+                        logger.info(f'Tweepy error occured: {e}, sleeping for 30 seconds...')
+                        await asyncio.sleep(30)
+                        continue
 
                     embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
                     video = extract_video_url(extended_tweet)
