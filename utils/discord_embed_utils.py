@@ -87,10 +87,13 @@ def get_quoted_tweet_embed(tweet):
                     value=author_info + populate_links(quoted_text),
                     inline=False)
 
-    photo_urls = extract_photo_urls(quoted_tweet)
+    original_photo_urls = extract_photo_urls(tweet)
+    quoted_photo_urls = extract_photo_urls(quoted_tweet)
 
-    if photo_urls:
-        embed.set_image(url=photo_urls[0])
+    if original_photo_urls:
+        embed.set_image(url=original_photo_urls[0])
+    elif quoted_photo_urls:
+        embed.set_image(url=quoted_photo_urls[0])
 
     return embed
 
