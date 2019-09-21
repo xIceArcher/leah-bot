@@ -177,7 +177,8 @@ class TwitterStalker(commands.Cog):
                         extended_tweet = get_tweet(short_tweet.id)
                     except TweepError as e:
                         self.tweet_queue.put(short_tweet)
-                        logger.info(f'Tweepy error occured: {e}, sleeping for 30 seconds...')
+                        logger.info(f'Tweepy error occured: {e}')
+                        logger.info('Sleeping for 30 seconds......')
                         await asyncio.sleep(30)
                         continue
 
@@ -206,6 +207,7 @@ class TwitterStalker(commands.Cog):
                             f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
                             f' in {self.bot.get_channel(channel_id).guild.name}')
                 except Exception as e:
+                    logger.info(f'Error processing tweet {short_tweet.id}')
                     logger.exception(e)
             else:
                 await asyncio.sleep(1)
