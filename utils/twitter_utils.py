@@ -55,15 +55,6 @@ def extract_text(tweet):
         except AttributeError:
             text = tweet.text
 
-    for url in tweet.entities['urls']:
-        text = text.replace(url['url'], url['expanded_url'])
-
-    try:
-        for media in tweet.extended_entities['media']:
-            text = text.replace(media['url'], '')
-    except AttributeError:
-        pass
-
     return text
 
 

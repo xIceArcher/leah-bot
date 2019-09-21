@@ -40,7 +40,7 @@ def get_main_tweet_embed(tweet, color: int = None):
     if color:
         embed.colour = color
 
-    embed.description = populate_links(embed.description)
+    embed.description = populate_links(embed.description, tweet)
 
     embed.set_author(name=f'{tweet.user.name} (@{tweet.user.screen_name})',
                      url=get_profile_url(tweet.user),
@@ -75,7 +75,7 @@ def get_quoted_tweet_embed(tweet):
 
     embed = Embed(url=get_tweet_url(tweet),
                   title=f'Tweet by {tweet.user.name}',
-                  description=re.sub(get_tweet_url(quoted_tweet), '', extract_text(tweet), flags=re.IGNORECASE))
+                  description=extract_text(tweet))
 
     author_text = f'Quoted tweet by {quoted_tweet.user.name} (@{quoted_tweet.user.screen_name})'
     quoted_link = get_tweet_url(quoted_tweet)
@@ -84,7 +84,7 @@ def get_quoted_tweet_embed(tweet):
     quoted_text = extract_text(quoted_tweet)
 
     embed.add_field(name=f'Quote',
-                    value=author_info + populate_links(quoted_text),
+                    value=author_info + populate_links(quoted_text, quoted_tweet),
                     inline=False)
 
     original_photo_urls = extract_photo_urls(tweet)
@@ -143,9 +143,36 @@ def replace_hashtag_with_link(text: str):
     return text
 
 
-def populate_links(text: str):
+def expand_short_links(text: str, tweet):
+    for url in tweet.entities['urls']:
+        text = text.replace(url['url'], url['expanded_url'])
+
+    return text
+
+
+def delete_media_links(text: str, tweet):
+    try:
+        for media in tweet.extended_entities['media']:
+            text = text.replace(media['url'], '')
+    except AttributeError:
+        pass
+
+    return text
+
+
+def delete_quote_links(text: str, tweet):
+    if is_quote(tweet):
+        text = re.sub(get_tweet_url(tweet.quoted_status), '', text, flags=re.IGNORECASE)
+
+    return text
+
+
+def populate_links(text: str, tweet):
     text = replace_mention_with_link(text)
     text = replace_hashtag_with_link(text)
+    text = expand_short_links(text, tweet)
+    text = delete_media_links(text, tweet)
+    text = delete_quote_links(text, tweet)
 
     return text
 
