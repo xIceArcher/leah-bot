@@ -1,5 +1,6 @@
 import logging
 
+from aiohttp import ClientConnectionError
 from discord.ext import commands
 
 from utils.discord_embed_utils import get_photo_embed
@@ -25,17 +26,16 @@ class PostInstaMedia(commands.Cog):
             photos = get_insta_photo_urls(link)
 
             for photo in photos:
-                await message.channel.send(embed=get_photo_embed(photo))
+                while True:
+                    try:
+                        await message.channel.send(embed=get_photo_embed(photo))
+                        break
+                    except ClientConnectionError:
+                        pass
 
             logger.info(f'Instagram URL: {link}, Photos: {photos}')
 
         await self.bot.process_commands(message)
-
-    @commands.command()
-    @commands.is_owner()
-    async def insta(self, ctx, insta_url: str):
-        for photo in get_insta_photo_urls(insta_url):
-            await ctx.channel.send(embed=get_photo_embed(photo))
 
 
 def setup(bot):

@@ -1,5 +1,6 @@
 import logging
 
+from aiohttp import ClientConnectionError
 from discord.ext import commands
 
 from utils.ameblo_utils import get_ameblo_photo_urls
@@ -25,7 +26,12 @@ class PostAmebloMedia(commands.Cog):
             photos = get_ameblo_photo_urls(link)[1:]
 
             for photo in photos:
-                await message.channel.send(embed=get_photo_embed(photo))
+                while True:
+                    try:
+                        await message.channel.send(embed=get_photo_embed(photo))
+                        break
+                    except ClientConnectionError:
+                        pass
 
             logger.info(f'Ameblo URL: {link}, Photos: {photos}')
 
