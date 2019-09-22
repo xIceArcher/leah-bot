@@ -130,7 +130,9 @@ def replace_mention_with_link(text: str):
     mentions.sort(reverse=True, key=len)
 
     for mention in mentions:
-        text = text.replace(mention, get_named_link(mention, get_profile_url(screen_name=mention[1:])))
+        # Capture group 1: Start of string or not '[' (not part of any other named link)
+        text = re.sub(fr'(^|[^\[]){mention}', fr'\1{get_named_link(mention, get_profile_url(screen_name=mention[1:]))}',
+                      text)
 
     return text
 
@@ -140,7 +142,8 @@ def replace_hashtag_with_link(text: str):
     hashtags.sort(reverse=True, key=len)
 
     for hashtag in hashtags:
-        text = text.replace(hashtag, get_named_link(hashtag, get_hashtag_url(hashtag)))
+        # Capture group 1: Start of string or not '[' (not part of any other named link)
+        text = re.sub(fr'(^|[^\[]){hashtag}', fr'\1{get_named_link(hashtag, get_hashtag_url(hashtag))}', text)
 
     return text
 
