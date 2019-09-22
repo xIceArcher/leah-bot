@@ -1,6 +1,7 @@
 import logging
 
 from discord.ext import commands
+from tweepy import TweepError, RateLimitError
 
 from utils.discord_embed_utils import get_photo_embed
 from utils.discord_utils import clean_message
@@ -25,7 +26,15 @@ class PostTweetMedia(commands.Cog):
         sent_media_count = 0
 
         for tweet_id in get_tweet_ids(cleaned_message):
-            tweet = get_tweet(tweet_id)
+            while True:
+                try:
+                    tweet = get_tweet(tweet_id)
+                    break
+                except RateLimitError:
+                    return
+                except TweepError:
+                    pass
+
             photos = extract_photo_urls(tweet)
 
             if not photos:
