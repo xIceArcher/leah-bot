@@ -24,8 +24,3 @@ def get_insta_photo_urls(url: str):
 
     photo_urls.pop(0)
     return photo_urls
-
-
-if __name__ == '__main__':
-    for url in get_insta_photo_urls('https://www.instagram.com/p/B2k7PvVHmAw/'):
-        print(url)
