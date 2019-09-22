@@ -168,6 +168,9 @@ def delete_quote_links(text: str, tweet):
 
 
 def populate_links(text: str, tweet):
+    if is_retweet(tweet):
+        tweet = tweet.retweeted_status
+
     text = replace_mention_with_link(text)
     text = replace_hashtag_with_link(text)
     text = expand_short_links(text, tweet)
