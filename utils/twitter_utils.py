@@ -55,6 +55,11 @@ def extract_text(tweet):
         except AttributeError:
             text = tweet.text
 
+    # Escape Discord's formatting
+    text = text.replace('&amp;', '\&')
+    text = text.replace('&lt;', '\<')
+    text = text.replace('&gt;', '\>')
+
     return text
 
 
