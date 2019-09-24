@@ -126,7 +126,7 @@ def get_named_link(text: str, link: str):
 
 
 def replace_mention_with_link(text: str):
-    mentions = re.findall(r'@[^ 　\r\n]+', text)
+    mentions = re.findall(r'@[\S]+', text)
     mentions.sort(reverse=True, key=len)
 
     for mention in mentions:
@@ -138,7 +138,7 @@ def replace_mention_with_link(text: str):
 
 
 def replace_hashtag_with_link(text: str):
-    hashtags = re.findall(r'#[^ 　\r\n]+', text)
+    hashtags = re.findall(r'#[\S]+', text)
     hashtags.sort(reverse=True, key=len)
 
     for hashtag in hashtags:
