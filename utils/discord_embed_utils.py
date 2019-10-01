@@ -126,19 +126,19 @@ def get_named_link(text: str, link: str):
 
 
 def replace_mention_with_link(text: str):
-    mentions = re.findall(r'@[\S]+', text)
+    mentions = re.findall(r'@[\w]+', text)
     mentions.sort(reverse=True, key=len)
 
     for mention in mentions:
-        # Capture group 1: Start of string or space
-        text = re.sub(fr'(^|\s){mention}', fr'\1{get_named_link(mention, get_profile_url(screen_name=mention[1:]))}',
+        # Capture group 1: Start of string or not word character
+        text = re.sub(fr'(^|\W){mention}', fr'\1{get_named_link(mention, get_profile_url(screen_name=mention[1:]))}',
                       text)
 
     return text
 
 
 def replace_hashtag_with_link(text: str):
-    hashtags = re.findall(r'#[\S]+', text)
+    hashtags = re.findall(r'#[^\d\W][\w]*', text)
     hashtags.sort(reverse=True, key=len)
 
     for hashtag in hashtags:
