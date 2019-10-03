@@ -65,9 +65,16 @@ def get_standard_tweet_embed(tweet):
 def get_reply_tweet_embed(tweet):
     replied_user = get_user(screen_name=tweet.in_reply_to_screen_name)
 
-    return Embed(url=get_tweet_url(tweet),
-                 title=f'Reply to {replied_user.name} (@{replied_user.screen_name})',
-                 description=re.sub(f'@{replied_user.screen_name}', '', extract_text(tweet), flags=re.IGNORECASE))
+    embed = Embed(url=get_tweet_url(tweet),
+                  title=f'Reply to {replied_user.name} (@{replied_user.screen_name})',
+                  description=re.sub(f'@{replied_user.screen_name}', '', extract_text(tweet), flags=re.IGNORECASE))
+
+    photos = extract_photo_urls(tweet)
+
+    if photos:
+        embed.set_image(url=photos[0])
+
+    return embed
 
 
 def get_quoted_tweet_embed(tweet):
