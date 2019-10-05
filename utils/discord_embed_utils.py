@@ -13,13 +13,11 @@ def get_tweet_embeds(tweet, color: int = None):
     if is_standard(tweet) or is_reply(tweet):
         photo_urls = extract_photo_urls(tweet)
 
-        try:
-            photo_urls.pop(0)
-        except (AttributeError, IndexError):
-            pass
-
         if photo_urls:
-            for photo_url in photo_urls:
+            embeds[0].set_image(url=photo_urls[0])
+
+        if len(photo_urls) > 1:
+            for photo_url in photo_urls[1:]:
                 embeds.append(get_photo_embed(photo_url, color=color))
 
     embeds[-1].add_tweet_footer(tweet)
@@ -54,11 +52,6 @@ def get_standard_tweet_embed(tweet):
                   title=f'Tweet by {tweet.user.name}',
                   description=extract_text(tweet))
 
-    photos = extract_photo_urls(tweet)
-
-    if photos:
-        embed.set_image(url=photos[0])
-
     return embed
 
 
@@ -68,11 +61,6 @@ def get_reply_tweet_embed(tweet):
     embed = Embed(url=get_tweet_url(tweet),
                   title=f'Reply to {replied_user.name} (@{replied_user.screen_name})',
                   description=re.sub(f'@{replied_user.screen_name}', '', extract_text(tweet), flags=re.IGNORECASE))
-
-    photos = extract_photo_urls(tweet)
-
-    if photos:
-        embed.set_image(url=photos[0])
 
     return embed
 

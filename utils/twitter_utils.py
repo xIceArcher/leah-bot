@@ -70,6 +70,15 @@ def extract_photo_urls(tweet):
         return None
 
 
+def extract_displayed_video_url(tweet):
+    if is_retweet(tweet):
+        return extract_video_url(tweet.retweeted_status)
+    elif is_quote(tweet):
+        return extract_video_url(tweet.quoted_status)
+    else:
+        return extract_video_url(tweet)
+
+
 def extract_video_url(tweet):
     max_bitrate = -1
     max_url = None

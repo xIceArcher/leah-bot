@@ -11,7 +11,8 @@ from discord.ext import commands
 from tweepy import TweepError
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, extract_video_url, is_reply, get_tweet
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
+    extract_displayed_video_url
 
 logger = logging.getLogger(__name__)
 
@@ -173,44 +174,41 @@ class TwitterStalker(commands.Cog):
                     continue
 
                 try:
-                    try:
-                        extended_tweet = get_tweet(short_tweet.id)
-                    except TweepError as e:
-                        self.tweet_queue.put(short_tweet)
-                        logger.info(f'Tweepy error occured: {e}')
-                        logger.info('Sleeping for 30 seconds......')
-                        await asyncio.sleep(30)
+                    extended_tweet = get_tweet(short_tweet.id)
+                except TweepError as e:
+                    self.tweet_queue.put(short_tweet)
+                    logger.info(f'Tweepy error occurred, sleeping for 5 seconds')
+                    await asyncio.sleep(5)
+                    continue
+
+                embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
+
+                for channel_id in self.stalk_destinations[user_id]:
+                    if not self.is_relevant(extended_tweet, channel_id):
                         continue
 
-                    embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
-                    video = extract_video_url(extended_tweet)
+                    channel = self.bot.get_channel(channel_id)
+                    video_url = extract_displayed_video_url(extended_tweet)
 
-                    for channel_id in self.stalk_destinations[user_id]:
-                        if is_reply(extended_tweet) and extended_tweet.in_reply_to_user_id_str not in self.stalk_users[
-                            channel_id]:
-                            continue
+                    try:
+                        for embed in embeds:
+                            await channel.send(embed=embed)
 
-                        channel = self.bot.get_channel(channel_id)
+                        if video_url:
+                            await channel.send(video_url)
+                    except ClientConnectorError:
+                        self.tweet_queue.put(short_tweet)
+                        logger.info(f'Could not connect to client, requeueing tweet {short_tweet.id}')
+                        break
 
-                        try:
-                            for embed in embeds:
-                                await channel.send(embed=embed)
-
-                            if video:
-                                await channel.send(video)
-                        except ClientConnectorError:
-                            self.tweet_queue.put(short_tweet)
-                            logger.info(f'Could not connect to client, requeueing tweet {short_tweet.id}')
-                            break
-
-                        logger.info(
-                            f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
-                            f' in {self.bot.get_channel(channel_id).guild.name}')
-                except Exception as e:
-                    logger.info(f'Error processing tweet {short_tweet.id}')
-                    logger.exception(e)
+                    logger.info(
+                        f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
+                        f' in {self.bot.get_channel(channel_id).guild.name}')
             else:
                 await asyncio.sleep(1)
+
+    def is_relevant(self, tweet, channel_id):
+        return not is_reply(tweet) or tweet.in_reply_to_user_id_str in self.stalk_users[channel_id]
 
     async def stream_restarter(self):
         while True:
