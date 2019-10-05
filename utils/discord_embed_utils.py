@@ -16,9 +16,9 @@ def get_tweet_embeds(tweet, color: int = None):
         if photo_urls:
             embeds[0].set_image(url=photo_urls[0])
 
-        if len(photo_urls) > 1:
-            for photo_url in photo_urls[1:]:
-                embeds.append(get_photo_embed(photo_url, color=color))
+            if len(photo_urls) > 1:
+                for photo_url in photo_urls[1:]:
+                    embeds.append(get_photo_embed(photo_url, color=color))
 
     embeds[-1].add_tweet_footer(tweet)
 
