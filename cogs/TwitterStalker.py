@@ -119,7 +119,12 @@ class TwitterStalker(commands.Cog):
 
     @commands.command()
     async def stalks(self, ctx):
-        stalk_names = [f'@{get_user(user_id=user_id).screen_name}' for user_id in self.stalk_users[ctx.channel.id]]
+        try:
+            stalk_names = [f'@{get_user(user_id=user_id).screen_name}' for user_id in self.stalk_users[ctx.channel.id]]
+        except KeyError:
+            await ctx.channel.send('No users stalked in this channel!')
+            return
+
         await ctx.channel.send(f'Users stalked in this channel: {", ".join(stalk_names)}')
 
     @commands.command()
@@ -177,7 +182,7 @@ class TwitterStalker(commands.Cog):
                     extended_tweet = get_tweet(short_tweet.id)
                 except TweepError as e:
                     self.tweet_queue.put(short_tweet)
-                    logger.info(f'Tweepy error occurred, sleeping for 5 seconds')
+                    logger.info(f'Tweepy error occurred: {e.response.text}, sleeping for 5 seconds')
                     await asyncio.sleep(5)
                     continue
 
