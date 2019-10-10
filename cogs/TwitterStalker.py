@@ -13,6 +13,7 @@ from tweepy import TweepError
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
     extract_displayed_video_url
+from utils.url_utils import get_tweet_ids
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +139,15 @@ class TwitterStalker(commands.Cog):
     async def restart(self, ctx):
         self.restart_flag.set()
         await ctx.channel.send('Restart flag set!')
+
+    @commands.command()
+    @commands.is_owner()
+    async def queue(self, ctx, url: str):
+        tweet_id = get_tweet_ids(url)[0]
+        tweet = get_tweet(tweet_id)
+
+        self.tweet_queue.put(tweet)
+        await ctx.channel.send(f'Queued tweet {tweet_id}!')
 
     @commands.command()
     @commands.is_owner()
