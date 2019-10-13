@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -7,7 +6,7 @@ from threading import Event, Thread
 
 import tweepy
 from aiohttp import ClientConnectorError
-from discord.ext import commands
+from discord.ext import commands, tasks
 from tweepy import TweepError
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
@@ -60,8 +59,8 @@ class TwitterStalker(commands.Cog):
         self.setup_stalked_users()
 
         self.start_stream()
-        asyncio.run_coroutine_threadsafe(self.discord_poster(), bot.loop)
-        asyncio.run_coroutine_threadsafe(self.stream_restarter(), bot.loop)
+        self.discord_poster.start()
+        self.stream_restarter.start()
 
     @commands.command()
     @commands.is_owner()
@@ -177,65 +176,58 @@ class TwitterStalker(commands.Cog):
                 message=f'User @{screen_name} (ID: {user.id_str}) now has color {hex(user_color)}',
                 color=user_color))
 
+    @tasks.loop(seconds=1.0)
     async def discord_poster(self):
-        await self.bot.wait_until_ready()
+        if not self.tweet_queue.empty():
+            short_tweet = self.tweet_queue.get()
+            user_id = short_tweet.user.id_str
 
-        while True:
-            if not self.tweet_queue.empty():
-                short_tweet = self.tweet_queue.get()
-                user_id = short_tweet.user.id_str
+            if user_id not in self.stalk_destinations:
+                return
 
-                if user_id not in self.stalk_destinations:
+            try:
+                extended_tweet = get_tweet(short_tweet.id)
+            except TweepError as e:
+                self.tweet_queue.put(short_tweet)
+                logger.info(f'Tweepy error occurred: {e.response.text}, sleeping for 5 seconds')
+                return
+
+            embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
+
+            for channel_id in self.stalk_destinations[user_id]:
+                if not self.is_relevant(extended_tweet, channel_id):
                     continue
+
+                channel = self.bot.get_channel(channel_id)
+                video_url = extract_displayed_video_url(extended_tweet)
 
                 try:
-                    extended_tweet = get_tweet(short_tweet.id)
-                except TweepError as e:
+                    for embed in embeds:
+                        await channel.send(embed=embed)
+
+                    if video_url:
+                        await channel.send(video_url)
+                except ClientConnectorError:
                     self.tweet_queue.put(short_tweet)
-                    logger.info(f'Tweepy error occurred: {e.response.text}, sleeping for 5 seconds')
-                    await asyncio.sleep(5)
-                    continue
+                    logger.info(f'Could not connect to client, requeueing tweet {short_tweet.id}')
+                    break
 
-                embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
-
-                for channel_id in self.stalk_destinations[user_id]:
-                    if not self.is_relevant(extended_tweet, channel_id):
-                        continue
-
-                    channel = self.bot.get_channel(channel_id)
-                    video_url = extract_displayed_video_url(extended_tweet)
-
-                    try:
-                        for embed in embeds:
-                            await channel.send(embed=embed)
-
-                        if video_url:
-                            await channel.send(video_url)
-                    except ClientConnectorError:
-                        self.tweet_queue.put(short_tweet)
-                        logger.info(f'Could not connect to client, requeueing tweet {short_tweet.id}')
-                        break
-
-                    logger.info(
-                        f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
-                        f' in {self.bot.get_channel(channel_id).guild.name}')
-            else:
-                await asyncio.sleep(1)
+                logger.info(
+                    f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
+                    f' in {self.bot.get_channel(channel_id).guild.name}')
 
     def is_relevant(self, tweet, channel_id):
         return not is_reply(tweet) or tweet.in_reply_to_user_id_str in self.stalk_users[channel_id]
 
+    @tasks.loop(minutes=1.0)
     async def stream_restarter(self):
-        while True:
-            if self.restart_flag.is_set():
-                logger.info('Restarting stream......')
-                self.kill_stream()
-                self.start_stream()
-                self.save_destinations()
-                self.restart_flag.clear()
-                logger.info('Stream restarted!')
-
-            await asyncio.sleep(60)
+        if self.restart_flag.is_set():
+            logger.info('Restarting stream......')
+            self.kill_stream()
+            self.start_stream()
+            self.save_destinations()
+            self.restart_flag.clear()
+            logger.info('Stream restarted!')
 
     def start_stream(self):
         self.listener = DiscordRepostListener(tweet_queue=self.tweet_queue, restart_flag=self.restart_flag)
@@ -300,6 +292,13 @@ class TwitterStalker(commands.Cog):
 
     def cog_unload(self):
         self.kill_stream()
+        self.discord_poster.cancel()
+        self.stream_restarter.cancel()
+
+    @discord_poster.before_loop
+    @stream_restarter.before_loop
+    async def await_ready(self):
+        await self.bot.wait_until_ready()
 
 
 def setup(bot):
