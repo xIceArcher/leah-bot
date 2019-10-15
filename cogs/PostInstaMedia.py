@@ -25,15 +25,16 @@ class PostInstaMedia(commands.Cog):
         for link in get_insta_links(cleaned_message):
             photos = get_insta_photo_urls(link)
 
-            for photo in photos:
-                while True:
-                    try:
-                        await message.channel.send(embed=get_photo_embed(photo))
-                        break
-                    except ClientConnectionError:
-                        pass
+            if photos:
+                for photo in photos:
+                    while True:
+                        try:
+                            await message.channel.send(embed=get_photo_embed(photo))
+                            break
+                        except ClientConnectionError:
+                            pass
 
-            logger.info(f'Instagram URL: {link}, Photos: {photos}')
+                logger.info(f'Instagram URL: {link}, Photos: {photos}')
 
         await self.bot.process_commands(message)
 
