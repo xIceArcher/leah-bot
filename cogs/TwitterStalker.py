@@ -189,8 +189,7 @@ class TwitterStalker(commands.Cog):
                 extended_tweet = get_tweet(short_tweet.id)
             except TweepError as e:
                 self.tweet_queue.put(short_tweet)
-                logger.info(
-                    f'Tweepy error occurred: {e.response.text}, error code = {e.api_code}, sleeping for 5 seconds')
+                logger.info(f'Tweepy error occurred, sleeping for 5 seconds')
                 return
 
             embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
