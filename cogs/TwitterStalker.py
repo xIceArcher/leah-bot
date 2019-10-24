@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from datetime import datetime, timezone
 from queue import Queue
 from threading import Event, Thread
 
@@ -11,7 +12,7 @@ from tweepy import TweepError
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
-    extract_displayed_video_url
+    extract_displayed_video_url, get_timeline, get_mock_tweet
 from utils.url_utils import get_tweet_ids
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class TwitterStalker(commands.Cog):
         self.stalk_destinations = {}
         self.stalk_users = {}
         self.colors = {}
+        self.last_tweet_time = datetime.now(timezone.utc)
 
         self.load_destinations()
         self.load_colors()
@@ -176,6 +178,30 @@ class TwitterStalker(commands.Cog):
                 message=f'User @{screen_name} (ID: {user.id_str}) now has color {hex(user_color)}',
                 color=user_color))
 
+    @commands.command()
+    @commands.is_owner()
+    async def catchup(self, ctx, time=None):
+        if time:
+            time_arr = list(map(int, time.split(' ')))
+            from_time = datetime(time_arr[0], time_arr[1], time_arr[2], time_arr[3], time_arr[4]).astimezone(
+                timezone.utc)
+        else:
+            from_time = self.last_tweet_time
+
+        tweets = []
+
+        for user_id in self.stalk_destinations:
+            for tweet in get_timeline(user_id):
+                if tweet.created_at.astimezone(timezone.utc) > from_time:
+                    tweets.append(get_mock_tweet(user_id, tweet.id, tweet.created_at))
+
+        tweets.sort(key=lambda x: x.created_at)
+
+        for tweet in tweets:
+            self.tweet_queue.put(tweet)
+
+        logger.info(f'Successfully caught up from {from_time}')
+
     @tasks.loop(seconds=1.0)
     async def discord_poster(self):
         if not self.tweet_queue.empty():
@@ -212,6 +238,7 @@ class TwitterStalker(commands.Cog):
                     logger.info(f'Could not connect to client, requeueing tweet {short_tweet.id}')
                     break
 
+                self.last_tweet_time = datetime.now(timezone.utc)
                 logger.info(
                     f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
                     f' in {self.bot.get_channel(channel_id).guild.name}')

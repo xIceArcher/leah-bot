@@ -137,3 +137,26 @@ def get_user(user_id=None, screen_name=None):
         return None
 
     return None
+
+
+def get_timeline(user_id, count=50):
+    api = get_tweepy()
+
+    return api.user_timeline(user_id=user_id, count=count)
+
+
+def get_mock_tweet(user_id, tweet_id, created_at=None):
+    class Object(object):
+        pass
+
+    mock_tweet = Object()
+    mock_tweet.id = tweet_id
+
+    mock_tweet.user = Object()
+    mock_tweet.user.id = int(user_id)
+    mock_tweet.user.id_str = str(user_id)
+
+    if created_at:
+        mock_tweet.created_at = created_at
+
+    return mock_tweet
