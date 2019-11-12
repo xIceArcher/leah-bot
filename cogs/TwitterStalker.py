@@ -147,7 +147,7 @@ class TwitterStalker(commands.Cog):
         tweet_id = get_tweet_ids(url)[0]
         tweet = get_tweet(tweet_id)
 
-        self.tweet_queue.put(tweet)
+        self.tweet_queue.put(get_mock_tweet(tweet.user.id, tweet_id))
         await ctx.channel.send(f'Queued tweet {tweet_id}!')
 
     @commands.command()
@@ -214,8 +214,17 @@ class TwitterStalker(commands.Cog):
             try:
                 extended_tweet = get_tweet(short_tweet.id)
             except TweepError as e:
+                if hasattr(short_tweet, 'curr_retries'):
+                    if short_tweet.curr_retries > 5:
+                        logger.info(
+                            f'Failed to post tweet {short_tweet.id} from user {get_user(user_id=short_tweet.user.id).name}')
+                        return
+                    else:
+                        short_tweet.curr_retries += 1
+                else:
+                    setattr(short_tweet, 'curr_retries', 1)
+
                 self.tweet_queue.put(short_tweet)
-                logger.info(f'Tweepy error occurred, sleeping for 5 seconds')
                 return
 
             embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
