@@ -12,7 +12,7 @@ from tweepy import TweepError
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
-    extract_displayed_video_url, get_timeline, get_mock_tweet
+    extract_displayed_video_url, get_timeline, get_mock_tweet, is_retweet, get_profile_url
 from utils.url_utils import get_tweet_ids
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,7 @@ class TwitterStalker(commands.Cog):
         self.stalk_users = {}
         self.colors = {}
         self.last_tweet_time = datetime.now(timezone.utc)
+        self.tweet_history = {}
 
         self.load_destinations()
         self.load_colors()
@@ -214,46 +215,87 @@ class TwitterStalker(commands.Cog):
             try:
                 extended_tweet = get_tweet(short_tweet.id)
             except TweepError as e:
-                if hasattr(short_tweet, 'curr_retries'):
-                    if short_tweet.curr_retries > 5:
-                        logger.info(
-                            f'Failed to post tweet {short_tweet.id} from user {get_user(user_id=short_tweet.user.id).name}')
-                        return
-                    else:
-                        short_tweet.curr_retries += 1
-                else:
-                    setattr(short_tweet, 'curr_retries', 1)
-
-                self.tweet_queue.put(short_tweet)
+                self.handle_posting_error(error_tweet=short_tweet)
                 return
 
-            embeds = get_tweet_embeds(extended_tweet, color=self.colors.get(short_tweet.user.id_str))
+            if is_retweet(extended_tweet) and extended_tweet.retweeted_status.id in self.tweet_history:
+                await self.handle_posted_retweet(extended_tweet)
+            else:
+                await self.handle_new_tweet(extended_tweet)
 
-            for channel_id in self.stalk_destinations[user_id]:
-                if not self.is_relevant(extended_tweet, channel_id):
-                    continue
+    async def handle_new_tweet(self, tweet):
+        user_id = tweet.user.id_str
 
-                channel = self.bot.get_channel(channel_id)
-                video_url = extract_displayed_video_url(extended_tweet)
+        embeds = get_tweet_embeds(tweet, color=self.colors.get(user_id))
+        self.tweet_history[tweet.id] = []
 
-                try:
-                    for embed in embeds:
-                        await channel.send(embed=embed)
+        for channel_id in self.stalk_destinations[user_id]:
+            if not self.is_relevant(tweet, channel_id):
+                continue
 
-                    if video_url:
-                        await channel.send(video_url)
-                except ClientConnectorError:
-                    self.tweet_queue.put(short_tweet)
-                    logger.info(f'Could not connect to client, requeueing tweet {short_tweet.id}')
-                    break
+            channel = self.bot.get_channel(channel_id)
+            video_url = extract_displayed_video_url(tweet)
 
-                self.last_tweet_time = datetime.now(timezone.utc)
-                logger.info(
-                    f'{get_tweet_url(extended_tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
-                    f' in {self.bot.get_channel(channel_id).guild.name}')
+            try:
+                main_discord_message = await channel.send(embed=embeds[0])
+                for embed in embeds[1:]:
+                    await channel.send(embed=embed)
+
+                if video_url:
+                    await channel.send(video_url)
+
+                self.tweet_history[tweet.id].append((channel_id, main_discord_message.id))
+            except ClientConnectorError:
+                self.tweet_queue.put(tweet)
+                logger.info(f'Could not connect to client, requeueing tweet {tweet.id}')
+                break
+
+            self.last_tweet_time = datetime.now(timezone.utc)
+            logger.info(
+                f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
+                f' in {self.bot.get_channel(channel_id).guild.name}')
 
     def is_relevant(self, tweet, channel_id):
         return not is_reply(tweet) or tweet.in_reply_to_user_id_str in self.stalk_users[channel_id]
+
+    async def handle_posted_retweet(self, tweet):
+        RETWEETED_BY_FIELD_NAME = 'Retweeted by'
+        str_appended = f'[@{tweet.user.name}]({get_profile_url(user=tweet.user)}) ({tweet.created_at})'
+
+        for channel_id, message_id in self.tweet_history[tweet.retweeted_status.id]:
+            channel = self.bot.get_channel(channel_id)
+            message = await channel.fetch_message(message_id)
+            found_flag = False
+
+            original_embed = message.embeds[0]
+            new_embed = original_embed
+
+            for i in range(len(original_embed.fields)):
+                original_field = original_embed.fields[i]
+
+                if original_field.name == RETWEETED_BY_FIELD_NAME:
+                    found_flag = True
+                    new_embed.set_field_at(i, name=RETWEETED_BY_FIELD_NAME,
+                                           value=f'{original_field.value}\n {str_appended}', inline=False)
+
+            if not found_flag:
+                new_embed.add_field(name=RETWEETED_BY_FIELD_NAME, value=str_appended, inline=False)
+
+            await message.edit(embed=new_embed)
+            logger.info(
+                f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name} in {self.bot.get_channel(channel_id).guild.name}')
+
+    def handle_posting_error(self, error_tweet):
+        if hasattr(error_tweet, 'curr_retries'):
+            if error_tweet.curr_retries > 5:
+                logger.info(
+                    f'Failed to post tweet {error_tweet.id} from user {get_user(user_id=error_tweet.user.id).name}')
+            else:
+                error_tweet.curr_retries += 1
+                self.tweet_queue.put(error_tweet)
+        else:
+            setattr(error_tweet, 'curr_retries', 1)
+            self.tweet_queue.put(error_tweet)
 
     @tasks.loop(minutes=1.0)
     async def stream_restarter(self):
@@ -330,6 +372,7 @@ class TwitterStalker(commands.Cog):
         self.kill_stream()
         self.discord_poster.cancel()
         self.stream_restarter.cancel()
+        self.save_destinations()
 
     @discord_poster.before_loop
     @stream_restarter.before_loop
