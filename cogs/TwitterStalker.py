@@ -14,6 +14,7 @@ from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
     extract_displayed_video_url, get_timeline, get_mock_tweet, is_retweet
 from utils.url_utils import get_tweet_ids
+from utils.utils import format_time_delta
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +256,9 @@ class TwitterStalker(commands.Cog):
 
     async def handle_posted_retweet(self, tweet):
         RETWEETED_BY_FIELD_NAME = 'Retweeted by'
-        str_appended = f'[@{tweet.user.name}]({get_tweet_url(tweet=tweet)}) ({tweet.created_at})'
+
+        td = tweet.created_at - tweet.retweeted_status.created_at
+        str_appended = f'[@{tweet.user.name}]({get_tweet_url(tweet=tweet)}) ({format_time_delta(td)} later)'
 
         for channel_id, message_id in self.tweet_history[tweet.retweeted_status.id]:
             channel = self.bot.get_channel(channel_id)
