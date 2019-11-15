@@ -4,23 +4,28 @@ import discord
 from discord import Embed
 
 from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, is_reply, \
-    get_user, is_quote, is_retweet, get_hashtag_url
+    get_user, is_quote, is_retweet, get_hashtag_url, extract_main_photo_url
 
 
 def get_tweet_embeds(tweet, color: int = None):
     embeds = [get_main_tweet_embed(tweet, color)]
 
     if not is_retweet(tweet):
-        photo_urls = extract_photo_urls(tweet)
-
-        if photo_urls:
-            embeds[0].set_image(url=photo_urls[0])
-
-            if len(photo_urls) > 1:
-                for photo_url in photo_urls[1:]:
-                    embeds.append(get_photo_embed(photo_url, color=color))
+        embeds += get_remaining_photo_embeds(tweet, color)
 
     embeds[-1].add_tweet_footer(tweet)
+
+    return embeds
+
+
+def get_remaining_photo_embeds(tweet, color: int = None):
+    embeds = []
+
+    photo_urls = extract_photo_urls(tweet)
+
+    if photo_urls and len(photo_urls) > 1:
+        for photo_url in photo_urls[1:]:
+            embeds.append(get_photo_embed(photo_url, color=color))
 
     return embeds
 
@@ -52,6 +57,11 @@ def get_standard_tweet_embed(tweet):
                   title=f'Tweet by {tweet.user.name}',
                   description=extract_text(tweet))
 
+    photo_url = extract_main_photo_url(tweet)
+
+    if photo_url:
+        embed.set_image(url=photo_url)
+
     return embed
 
 
@@ -61,6 +71,11 @@ def get_reply_tweet_embed(tweet):
     embed = Embed(url=get_tweet_url(tweet),
                   title=f'Reply to {replied_user.name} (@{replied_user.screen_name})',
                   description=re.sub(f'@{replied_user.screen_name}', '', extract_text(tweet), flags=re.IGNORECASE))
+
+    photo_url = extract_main_photo_url(tweet)
+
+    if photo_url:
+        embed.set_image(url=photo_url)
 
     return embed
 
@@ -100,10 +115,10 @@ def get_retweet_embed(tweet):
                   title=f'Retweeted {retweet.user.name} (@{retweet.user.screen_name})',
                   description=extract_text(retweet))
 
-    photo_urls = extract_photo_urls(retweet)
+    photo_url = extract_main_photo_url(retweet)
 
-    if photo_urls:
-        embed.set_image(url=photo_urls[0])
+    if photo_url:
+        embed.set_image(url=photo_url)
 
     return embed
 

@@ -70,8 +70,18 @@ def extract_photo_urls(tweet):
         return None
 
 
+def extract_main_photo_url(tweet):
+    photo_urls = extract_photo_urls(tweet)
+    return photo_urls[0] if photo_urls else None
+
+
 def extract_displayed_video_url(tweet):
-    if is_retweet(tweet):
+    if is_quote(tweet):
+        original_video_url = extract_video_url(tweet)
+        quoted_video_url = extract_video_url(tweet.quoted_status)
+
+        return original_video_url if original_video_url else quoted_video_url
+    elif is_retweet(tweet):
         return extract_video_url(tweet.retweeted_status)
     else:
         return extract_video_url(tweet)
