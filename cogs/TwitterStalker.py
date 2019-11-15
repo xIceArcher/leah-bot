@@ -132,18 +132,6 @@ class TwitterStalker(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def embed(self, ctx, tweet_id: int):
-        for embed in get_tweet_embeds(get_tweet(tweet_id=tweet_id)):
-            await ctx.channel.send(embed=embed)
-
-    @commands.command()
-    @commands.is_owner()
-    async def restart(self, ctx):
-        self.restart_flag.set()
-        await ctx.channel.send('Restart flag set!')
-
-    @commands.command()
-    @commands.is_owner()
     async def queue(self, ctx, url: str):
         tweet_id = get_tweet_ids(url)[0]
         tweet = get_tweet(tweet_id)
