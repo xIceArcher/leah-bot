@@ -4,13 +4,13 @@ import discord
 from discord import Embed
 
 from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, is_reply, \
-    get_user, is_quote, is_retweet, is_standard, get_hashtag_url
+    get_user, is_quote, is_retweet, get_hashtag_url
 
 
 def get_tweet_embeds(tweet, color: int = None):
     embeds = [get_main_tweet_embed(tweet, color)]
 
-    if is_standard(tweet) or is_reply(tweet):
+    if not is_retweet(tweet):
         photo_urls = extract_photo_urls(tweet)
 
         if photo_urls:
