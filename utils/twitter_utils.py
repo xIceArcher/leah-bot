@@ -106,6 +106,10 @@ def extract_links(tweet):
     return [x['expanded_url'] for x in tweet.entities['urls']]
 
 
+def extract_visible_id(tweet):
+    return tweet.retweeted_status.id if is_retweet(tweet) else tweet.id
+
+
 def get_tweet_url(tweet):
     return f'https://twitter.com/{tweet.user.screen_name}/status/{tweet.id}'
 

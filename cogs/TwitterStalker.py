@@ -12,7 +12,7 @@ from tweepy import TweepError
 
 from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
-    extract_displayed_video_url, get_timeline, get_mock_tweet, is_retweet
+    extract_displayed_video_url, get_timeline, get_mock_tweet, extract_visible_id
 from utils.url_utils import get_tweet_ids
 from utils.utils import format_time_delta
 
@@ -90,6 +90,7 @@ class TwitterStalker(commands.Cog):
 
         if ctx.channel.id not in self.stalk_users:
             self.stalk_users[ctx.channel.id] = []
+            self.tweet_history[ctx.channel.id] = {}
 
         self.stalk_users[ctx.channel.id].append(user_id)
 
@@ -120,6 +121,7 @@ class TwitterStalker(commands.Cog):
 
         if not self.stalk_users[ctx.channel.id]:
             del self.stalk_users[ctx.channel.id]
+            del self.tweet_history[ctx.channel.id]
 
     @commands.command()
     async def stalks(self, ctx):
@@ -207,81 +209,72 @@ class TwitterStalker(commands.Cog):
                 self.handle_posting_error(error_tweet=short_tweet)
                 return
 
-            if is_retweet(extended_tweet) and extended_tweet.retweeted_status.id in self.tweet_history:
-                await self.handle_posted_retweet(extended_tweet)
-            else:
-                await self.handle_new_tweet(extended_tweet)
+            for channel_id in self.stalk_destinations[user_id]:
+                if not self.is_relevant(extended_tweet, channel_id):
+                    continue
 
-    async def handle_new_tweet(self, tweet):
-        user_id = tweet.user.id_str
-
-        embeds = get_tweet_embeds(tweet, color=self.colors.get(user_id))
-
-        if is_retweet(tweet):
-            self.tweet_history[tweet.retweeted_status.id] = []
-        else:
-            self.tweet_history[tweet.id] = []
-
-        for channel_id in self.stalk_destinations[user_id]:
-            if not self.is_relevant(tweet, channel_id):
-                continue
-
-            channel = self.bot.get_channel(channel_id)
-            video_url = extract_displayed_video_url(tweet)
-
-            try:
-                main_discord_message = await channel.send(embed=embeds[0])
-                for embed in embeds[1:]:
-                    await channel.send(embed=embed)
-
-                if video_url:
-                    await channel.send(video_url)
-
-                if is_retweet(tweet):
-                    self.tweet_history[tweet.retweeted_status.id].append((channel_id, main_discord_message.id))
+                if extract_visible_id(extended_tweet) in self.tweet_history[channel_id]:
+                    await self.handle_posted_retweet(extended_tweet, channel_id)
                 else:
-                    self.tweet_history[tweet.id].append((channel_id, main_discord_message.id))
-            except ClientConnectorError:
-                self.tweet_queue.put(tweet)
-                logger.info(f'Could not connect to client, requeueing tweet {tweet.id}')
-                break
-
-            self.last_tweet_time = datetime.now(timezone.utc)
-            logger.info(
-                f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
-                f' in {self.bot.get_channel(channel_id).guild.name}')
+                    await self.handle_new_tweet(extended_tweet, channel_id)
 
     def is_relevant(self, tweet, channel_id):
         return not is_reply(tweet) or tweet.in_reply_to_user_id_str in self.stalk_users[channel_id]
 
-    async def handle_posted_retweet(self, tweet):
+    async def handle_new_tweet(self, tweet, channel_id):
+        user_id = tweet.user.id_str
+        embeds = get_tweet_embeds(tweet, color=self.colors.get(user_id))
+        video_url = extract_displayed_video_url(tweet)
+
+        channel = self.bot.get_channel(channel_id)
+
+        try:
+            main_discord_message = await channel.send(embed=embeds[0])
+            for embed in embeds[1:]:
+                await channel.send(embed=embed)
+
+            if video_url:
+                await channel.send(video_url)
+
+            self.tweet_history[channel_id][extract_visible_id(tweet)] = main_discord_message.id
+        except ClientConnectorError:
+            self.tweet_queue.put(tweet)
+            logger.info(f'Could not connect to client, requeueing tweet {tweet.id}')
+            return
+
+        self.last_tweet_time = datetime.now(timezone.utc)
+        logger.info(
+            f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
+            f' in {self.bot.get_channel(channel_id).guild.name}')
+
+    async def handle_posted_retweet(self, tweet, channel_id):
         RETWEETED_BY_FIELD_NAME = 'Retweeted by'
 
-        td = tweet.created_at - tweet.retweeted_status.created_at
+        channel = self.bot.get_channel(channel_id)
+        message_id = self.tweet_history[channel_id][extract_visible_id(tweet)]
+        message = await channel.fetch_message(message_id)
+        original_embed = message.embeds[0]
+        new_embed = original_embed
+
+        td = tweet.created_at - original_embed.timestamp
         str_appended = f'[@{tweet.user.name}]({get_tweet_url(tweet=tweet)}) ({format_time_delta(td)} later)'
 
-        for channel_id, message_id in self.tweet_history[tweet.retweeted_status.id]:
-            channel = self.bot.get_channel(channel_id)
-            message = await channel.fetch_message(message_id)
-            found_flag = False
+        found_flag = False
 
-            original_embed = message.embeds[0]
-            new_embed = original_embed
+        for i in range(len(original_embed.fields)):
+            original_field = original_embed.fields[i]
 
-            for i in range(len(original_embed.fields)):
-                original_field = original_embed.fields[i]
+            if original_field.name == RETWEETED_BY_FIELD_NAME:
+                found_flag = True
+                new_embed.set_field_at(i, name=RETWEETED_BY_FIELD_NAME,
+                                       value=f'{original_field.value}\n{str_appended}', inline=False)
 
-                if original_field.name == RETWEETED_BY_FIELD_NAME:
-                    found_flag = True
-                    new_embed.set_field_at(i, name=RETWEETED_BY_FIELD_NAME,
-                                           value=f'{original_field.value}\n {str_appended}', inline=False)
+        if not found_flag:
+            new_embed.add_field(name=RETWEETED_BY_FIELD_NAME, value=str_appended, inline=False)
 
-            if not found_flag:
-                new_embed.add_field(name=RETWEETED_BY_FIELD_NAME, value=str_appended, inline=False)
-
-            await message.edit(embed=new_embed)
-            logger.info(
-                f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name} in {self.bot.get_channel(channel_id).guild.name}')
+        await message.edit(embed=new_embed)
+        logger.info(
+            f'Retweet {get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name} in {self.bot.get_channel(channel_id).guild.name}')
 
     def handle_posting_error(self, error_tweet):
         if hasattr(error_tweet, 'curr_retries'):
@@ -363,6 +356,7 @@ class TwitterStalker(commands.Cog):
             for channel_id in self.stalk_destinations[user_id]:
                 if channel_id not in self.stalk_users:
                     self.stalk_users[channel_id] = []
+                    self.tweet_history[channel_id] = {}
 
                 self.stalk_users[channel_id].append(user_id)
 
