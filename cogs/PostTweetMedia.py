@@ -1,12 +1,9 @@
 import logging
 
 from discord.ext import commands
-from tweepy import TweepError, RateLimitError
 
-from utils.discord_embed_utils import get_photo_embed
-from utils.discord_utils import clean_message
 from utils.twitter_utils import extract_photo_urls, get_tweet
-from utils.url_utils import get_tweet_ids, get_photo_id
+from utils.url_utils import get_tweet_ids
 
 logger = logging.getLogger(__name__)
 
@@ -16,46 +13,6 @@ MAX_MEDIA_COUNT = 5
 class PostTweetMedia(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.content.startswith(self.bot.command_prefix):
-            return
-
-        cleaned_message = clean_message(message.content)
-        sent_media_count = 0
-
-        for tweet_id in get_tweet_ids(cleaned_message):
-            while True:
-                try:
-                    tweet = get_tweet(tweet_id)
-                    break
-                except RateLimitError:
-                    return
-                except TweepError:
-                    pass
-
-            photos = extract_photo_urls(tweet)
-
-            if not photos:
-                continue
-
-            photos.pop(0)
-
-            if photos:
-                logger.info(
-                    f'Message: {message.content} in {message.channel.name}, {message.channel.guild.name}, Tweet ID: {tweet_id}, Photos: {photos}')
-
-                for photo in photos:
-                    if sent_media_count >= MAX_MEDIA_COUNT:
-                        await message.channel.send('ツイートメディアは遊びじゃない！')
-                        return
-
-                    if cleaned_message.find(get_photo_id(photo)) == -1:
-                        sent_media_count += 1
-                        await message.channel.send(embed=get_photo_embed(photo))
-
-            await self.bot.process_commands(message)
 
     @commands.command()
     async def photos(self, ctx, twitter_url: str):
