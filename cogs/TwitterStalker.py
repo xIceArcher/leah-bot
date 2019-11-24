@@ -230,13 +230,19 @@ class TwitterStalker(commands.Cog):
 
         try:
             main_discord_message = await channel.send(embed=embeds[0])
-            for embed in embeds[1:]:
-                await channel.send(embed=embed)
+
+            if len(embeds) == 1:
+                timestamp_discord_message = main_discord_message
+            else:
+                for embed in embeds[1:-1]:
+                    await channel.send(embed=embed)
+                timestamp_discord_message = await channel.send(embed=embeds[-1])
 
             if video_url:
                 await channel.send(video_url)
 
-            self.tweet_history[channel_id][extract_visible_id(tweet)] = main_discord_message.id
+            self.tweet_history[channel_id][extract_visible_id(tweet)] = (
+            main_discord_message.id, timestamp_discord_message.id)
         except ClientConnectorError:
             self.tweet_queue.put(tweet)
             logger.info(f'Could not connect to client, requeueing tweet {tweet.id}')
@@ -251,12 +257,14 @@ class TwitterStalker(commands.Cog):
         RETWEETED_BY_FIELD_NAME = 'Retweeted by'
 
         channel = self.bot.get_channel(channel_id)
-        message_id = self.tweet_history[channel_id][extract_visible_id(tweet)]
-        message = await channel.fetch_message(message_id)
-        original_embed = message.embeds[0]
+        main_message_id, timestamp_message_id = self.tweet_history[channel_id][extract_visible_id(tweet)]
+        main_message = await channel.fetch_message(main_message_id)
+
+        original_embed = main_message.embeds[0]
         new_embed = original_embed
 
-        td = tweet.created_at - original_embed.timestamp
+        timestamp_message = await channel.fetch_message(timestamp_message_id)
+        td = tweet.created_at - timestamp_message.embeds[0].timestamp
         str_appended = f'[@{tweet.user.name}]({get_tweet_url(tweet=tweet)}) ({format_time_delta(td)} later)'
 
         found_flag = False
@@ -272,7 +280,7 @@ class TwitterStalker(commands.Cog):
         if not found_flag:
             new_embed.add_field(name=RETWEETED_BY_FIELD_NAME, value=str_appended, inline=False)
 
-        await message.edit(embed=new_embed)
+        await main_message.edit(embed=new_embed)
         logger.info(
             f'Retweet {get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name} in {self.bot.get_channel(channel_id).guild.name}')
 
