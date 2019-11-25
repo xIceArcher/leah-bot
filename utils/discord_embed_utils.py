@@ -8,10 +8,7 @@ from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls,
 
 
 def get_tweet_embeds(tweet, color: int = None):
-    embeds = [get_main_tweet_embed(tweet, color)]
-
-    if not is_retweet(tweet):
-        embeds += get_remaining_photo_embeds(tweet, color)
+    embeds = [get_main_tweet_embed(tweet, color)] + get_remaining_photo_embeds(tweet, color)
 
     embeds[-1].add_tweet_footer(tweet)
 
