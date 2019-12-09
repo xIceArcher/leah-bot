@@ -19,7 +19,7 @@ def get_photo_url(url: str, size='orig'):
 
 
 def get_insta_links(s: str):
-    regex = re.compile(r'http[s]?://(?:w{3})?\.instagram\.com/p/[A-Za-z0-9\-_]*/?(?:\?[^ \r\n]*)?')
+    regex = re.compile(r'http[s]?://(?:w{3}\.)?instagram\.com/p/[A-Za-z0-9\-_]*/?(?:\?[^ \r\n]*)?')
     return list(OrderedDict.fromkeys(regex.findall(s)))
 
 
