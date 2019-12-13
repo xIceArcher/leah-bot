@@ -196,18 +196,18 @@ class TwitterStalker(commands.Cog):
 
     @tasks.loop(seconds=1.0)
     async def discord_poster(self):
-        if not self.tweet_queue.empty():
+        while not self.tweet_queue.empty():
             short_tweet = self.tweet_queue.get()
             user_id = short_tweet.user.id_str
 
             if user_id not in self.stalk_destinations:
-                return
+                continue
 
             try:
                 extended_tweet = get_tweet(short_tweet.id)
             except TweepError as e:
                 self.handle_posting_error(error_tweet=short_tweet)
-                return
+                continue
 
             for channel_id in self.stalk_destinations[user_id]:
                 if not self.is_relevant(extended_tweet, channel_id):
