@@ -5,6 +5,7 @@ from discord import Embed
 
 from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, is_reply, \
     get_user, is_quote, is_retweet, get_hashtag_url, extract_main_photo_url
+from utils.url_utils import unpack_short_link
 
 
 def get_tweet_embeds(tweet, color: int = None):
@@ -157,7 +158,7 @@ def replace_hashtag_with_link(text: str):
 
 def expand_short_links(text: str, tweet):
     for url in tweet.entities['urls']:
-        text = text.replace(url['url'], url['expanded_url'])
+        text = text.replace(url['url'], unpack_short_link(url['expanded_url']))
 
     return text
 

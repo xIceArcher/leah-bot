@@ -1,5 +1,8 @@
+import http
 import re
 from collections import OrderedDict
+
+import requests
 
 
 def get_tweet_ids(s: str):
@@ -26,3 +29,13 @@ def get_insta_links(s: str):
 def get_ameblo_links(s: str):
     regex = re.compile(r'http[s]?://ameblo\.jp/[A-Za-z0-9_\-]+/entry-[0-9]+\.html')
     return list(OrderedDict.fromkeys(regex.findall(s)))
+
+
+def unpack_short_link(s: str):
+    if s.find('ow.ly') != -1:
+        res = requests.get(s, allow_redirects=False)
+
+        if res.status_code == http.HTTPStatus.MOVED_PERMANENTLY:
+            return res.headers['Location']
+
+    return s
