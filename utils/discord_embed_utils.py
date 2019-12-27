@@ -136,25 +136,20 @@ def get_named_link(text: str, link: str):
     return f'[{text}]({link})'
 
 
-def replace_mention_with_link(text: str):
-    mentions = re.findall(r'@[\w]+', text)
-    mentions.sort(reverse=True, key=len)
-
-    for mention in mentions:
-        # Capture group 1: Start of string or not word character
-        text = re.sub(fr'(^|\W){mention}', fr'\1{get_named_link(mention, get_profile_url(screen_name=mention[1:]))}',
-                      text)
+def replace_mention_with_link(text: str, tweet):
+    for mention in tweet.entities['user_mentions']:
+        print(mention)
+        mention_text = '@' + mention['screen_name']
+        text = text.replace(mention_text,
+                            get_named_link(mention_text, get_profile_url(screen_name=mention['screen_name'])))
 
     return text
 
 
-def replace_hashtag_with_link(text: str):
-    hashtags = re.findall(r'#[^\d\W][\w]*', text)
-    hashtags.sort(reverse=True, key=len)
-
-    for hashtag in hashtags:
-        # Capture group 1: Start of string or not '[' (not part of any other named link)
-        text = re.sub(fr'(^|[^\[]){hashtag}', fr'\1{get_named_link(hashtag, get_hashtag_url(hashtag))}', text)
+def replace_hashtag_with_link(text: str, tweet):
+    for hashtag in tweet.entities['hashtags']:
+        hashtag_text = '#' + hashtag['text']
+        text = text.replace(hashtag_text, get_named_link(hashtag_text, get_hashtag_url(hashtag_text)))
 
     return text
 
@@ -187,9 +182,12 @@ def populate_links(text: str, tweet):
     if is_retweet(tweet):
         tweet = tweet.retweeted_status
 
-    text = replace_mention_with_link(text)
-    text = replace_hashtag_with_link(text)
+    text = replace_mention_with_link(text, tweet)
+    text = replace_hashtag_with_link(text, tweet)
+
+    # Must be done after previous two operations to prevent bugs where URLs contain '#'
     text = expand_short_links(text, tweet)
+
     text = delete_media_links(text, tweet)
     text = delete_quote_links(text, tweet)
 
