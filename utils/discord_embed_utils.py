@@ -19,7 +19,10 @@ def get_tweet_embeds(tweet, color: int = None):
 def get_remaining_photo_embeds(tweet, color: int = None):
     embeds = []
 
-    photo_urls = extract_photo_urls(tweet)
+    if is_retweet(tweet):
+        photo_urls = extract_photo_urls(tweet.retweeted_status)
+    else:
+        photo_urls = extract_photo_urls(tweet)
 
     if photo_urls and len(photo_urls) > 1:
         for photo_url in photo_urls[1:]:
