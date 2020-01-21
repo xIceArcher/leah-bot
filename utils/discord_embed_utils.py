@@ -138,7 +138,6 @@ def get_named_link(text: str, link: str):
 
 def replace_mention_with_link(text: str, tweet):
     for mention in tweet.entities['user_mentions']:
-        print(mention)
         mention_text = '@' + mention['screen_name']
         text = text.replace(mention_text,
                             get_named_link(mention_text, get_profile_url(screen_name=mention['screen_name'])))
