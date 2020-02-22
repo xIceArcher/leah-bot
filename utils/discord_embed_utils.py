@@ -146,9 +146,14 @@ def replace_mention_with_link(text: str, tweet):
 
 
 def replace_hashtag_with_link(text: str, tweet):
-    for hashtag in tweet.entities['hashtags']:
-        hashtag_text = '#' + hashtag['text']
-        text = text.replace(hashtag_text, get_named_link(hashtag_text, get_hashtag_url(hashtag_text)))
+    hashtags_sorted = sorted(tweet.entities['hashtags'], key=lambda x: x['indices'][0], reverse=True)
+
+    for hashtag in hashtags_sorted:
+        start, end = hashtag['indices']
+
+        # text[start] is either '#' or '＃', so this preserves the original character used
+        hashtag_text = text[start] + hashtag['text']
+        text = text[0:start] + get_named_link(hashtag_text, get_hashtag_url(hashtag_text)) + text[end:]
 
     return text
 
