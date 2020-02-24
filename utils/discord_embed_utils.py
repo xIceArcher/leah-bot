@@ -44,7 +44,7 @@ def get_main_tweet_embed(tweet, color: int = None):
     if color:
         embed.colour = color
 
-    embed.description = populate_links(embed.description, tweet)
+    embed.description = fix_tweet_text(embed.description, tweet)
 
     embed.set_author(name=f'{tweet.user.name} (@{tweet.user.screen_name})',
                      url=get_profile_url(tweet.user),
@@ -95,7 +95,7 @@ def get_quoted_tweet_embed(tweet):
     quoted_text = extract_text(quoted_tweet)
 
     embed.add_field(name=f'Quote',
-                    value=author_info + populate_links(quoted_text, quoted_tweet),
+                    value=author_info + fix_tweet_text(quoted_text, quoted_tweet),
                     inline=False)
 
     original_photo_urls = extract_photo_urls(tweet)
@@ -182,18 +182,33 @@ def delete_quote_links(text: str, tweet):
     return text
 
 
+def fix_tweet_text(text: str, tweet):
+    text = populate_links(text, tweet)
+    text = fix_escape_characters(text)
+
+    return text
+
+
 def populate_links(text: str, tweet):
     if is_retweet(tweet):
         tweet = tweet.retweeted_status
 
-    text = replace_mention_with_link(text, tweet)
     text = replace_hashtag_with_link(text, tweet)
+    text = replace_mention_with_link(text, tweet)
 
-    # Must be done after previous two operations to prevent bugs where URLs contain '#'
     text = expand_short_links(text, tweet)
 
     text = delete_media_links(text, tweet)
     text = delete_quote_links(text, tweet)
+
+    return text
+
+
+def fix_escape_characters(text: str):
+    # Escape Discord's formatting
+    text = text.replace('&amp;', '\&')
+    text = text.replace('&lt;', '\<')
+    text = text.replace('&gt;', '\>')
 
     return text
 
