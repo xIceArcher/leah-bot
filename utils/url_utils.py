@@ -32,10 +32,15 @@ def get_ameblo_links(s: str):
 
 
 def unpack_short_link(s: str):
-    if s.find('ow.ly') != -1:
-        res = requests.get(s, allow_redirects=False)
+    MAX_REDIRECTS = 5
+    curr_redirects = 0
 
-        if res.status_code == http.HTTPStatus.MOVED_PERMANENTLY:
-            return res.headers['Location']
+    while curr_redirects < MAX_REDIRECTS:
+        res = requests.get(s, allow_redirects=False)
+        if res.status_code == http.HTTPStatus.MOVED_PERMANENTLY or res.status_code == http.HTTPStatus.FOUND:
+            s = res.headers['Location']
+            curr_redirects += 1
+        else:
+            break
 
     return s
