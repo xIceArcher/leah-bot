@@ -71,7 +71,7 @@ def get_reply_tweet_embed(tweet):
 
     embed = Embed(url=get_tweet_url(tweet),
                   title=f'Reply to {replied_user.name} (@{replied_user.screen_name})',
-                  description=re.sub(f'@{replied_user.screen_name}', '', extract_text(tweet), flags=re.IGNORECASE))
+                  description=extract_text(tweet))
 
     photo_url = extract_main_photo_url(tweet)
 
@@ -185,6 +185,7 @@ def delete_quote_links(text: str, tweet):
 def fix_tweet_text(text: str, tweet):
     text = populate_links(text, tweet)
     text = fix_escape_characters(text)
+    text = remove_reply_mentions(text, tweet)
 
     return text
 
@@ -209,6 +210,14 @@ def fix_escape_characters(text: str):
     text = text.replace('&amp;', '\&')
     text = text.replace('&lt;', '\<')
     text = text.replace('&gt;', '\>')
+
+    return text
+
+
+def remove_reply_mentions(text: str, tweet):
+    if is_reply(tweet):
+        replied_user_name = tweet.in_reply_to_screen_name
+        text = re.sub(f'@{replied_user_name} ', '', text, flags=re.IGNORECASE)
 
     return text
 
