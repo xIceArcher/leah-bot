@@ -136,7 +136,7 @@ def fix_tweet_text(text: str, tweet):
     text = populate_links(text, tweet)
     text = fix_escape_characters(text)
 
-    return text
+    return text.strip()
 
 
 def populate_links(text: str, tweet):
