@@ -139,8 +139,12 @@ def get_named_link(text: str, link: str):
 def replace_mention_with_link(text: str, tweet):
     for mention in tweet.entities['user_mentions']:
         mention_text = '@' + mention['screen_name']
-        text = text.replace(mention_text,
-                            get_named_link(mention_text, get_profile_url(screen_name=mention['screen_name'])))
+
+        if is_reply(tweet) and mention['screen_name'] == tweet.in_reply_to_screen_name:
+            text = re.sub(mention_text, '', text, flags=re.IGNORECASE)
+        else:
+            text = text.replace(mention_text,
+                                get_named_link(mention_text, get_profile_url(screen_name=mention['screen_name'])))
 
     return text
 
@@ -185,7 +189,6 @@ def delete_quote_links(text: str, tweet):
 def fix_tweet_text(text: str, tweet):
     text = populate_links(text, tweet)
     text = fix_escape_characters(text)
-    text = remove_reply_mentions(text, tweet)
 
     return text
 
@@ -210,14 +213,6 @@ def fix_escape_characters(text: str):
     text = text.replace('&amp;', '\&')
     text = text.replace('&lt;', '\<')
     text = text.replace('&gt;', '\>')
-
-    return text
-
-
-def remove_reply_mentions(text: str, tweet):
-    if is_reply(tweet):
-        replied_user_name = tweet.in_reply_to_screen_name
-        text = re.sub(f'@{replied_user_name} ', '', text, flags=re.IGNORECASE)
 
     return text
 
