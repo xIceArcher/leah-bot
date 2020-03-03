@@ -16,21 +16,6 @@ def get_tweet_embeds(tweet, color: int = None):
     return embeds
 
 
-def get_remaining_photo_embeds(tweet, color: int = None):
-    embeds = []
-
-    if is_retweet(tweet):
-        photo_urls = extract_photo_urls(tweet.retweeted_status)
-    else:
-        photo_urls = extract_photo_urls(tweet)
-
-    if photo_urls and len(photo_urls) > 1:
-        for photo_url in photo_urls[1:]:
-            embeds.append(get_photo_embed(photo_url, color=color))
-
-    return embeds
-
-
 def get_main_tweet_embed(tweet, color: int = None):
     if is_reply(tweet):
         embed = get_reply_tweet_embed(tweet)
@@ -124,66 +109,27 @@ def get_retweet_embed(tweet):
     return embed
 
 
+def get_remaining_photo_embeds(tweet, color: int = None):
+    embeds = []
+
+    if is_retweet(tweet):
+        photo_urls = extract_photo_urls(tweet.retweeted_status)
+    else:
+        photo_urls = extract_photo_urls(tweet)
+
+    if photo_urls and len(photo_urls) > 1:
+        for photo_url in photo_urls[1:]:
+            embeds.append(get_photo_embed(photo_url, color=color))
+
+    return embeds
+
+
 def get_photo_embed(url: str, color: int = None):
     return Embed(color=color).set_image(url=url) if color else Embed().set_image(url=url)
 
 
 def get_color_embed(message: str, color: int):
     return Embed(description=message, color=color)
-
-
-def get_named_link(text: str, link: str):
-    return f'[{text}]({link})'
-
-
-def replace_mention_with_link(text: str, tweet):
-    for mention in tweet.entities['user_mentions']:
-        mention_text = '@' + mention['screen_name']
-
-        if is_reply(tweet) and mention['screen_name'] == tweet.in_reply_to_screen_name:
-            text = re.sub(mention_text, '', text, flags=re.IGNORECASE)
-        else:
-            text = text.replace(mention_text,
-                                get_named_link(mention_text, get_profile_url(screen_name=mention['screen_name'])))
-
-    return text
-
-
-def replace_hashtag_with_link(text: str, tweet):
-    hashtags_sorted = sorted(tweet.entities['hashtags'], key=lambda x: x['indices'][0], reverse=True)
-
-    for hashtag in hashtags_sorted:
-        start, end = hashtag['indices']
-
-        # text[start] is either '#' or '＃', so this preserves the original character used
-        hashtag_text = text[start] + hashtag['text']
-        text = text[0:start] + get_named_link(hashtag_text, get_hashtag_url(hashtag_text)) + text[end:]
-
-    return text
-
-
-def expand_short_links(text: str, tweet):
-    for url in tweet.entities['urls']:
-        text = text.replace(url['url'], unpack_short_link(url['expanded_url']))
-
-    return text
-
-
-def delete_media_links(text: str, tweet):
-    try:
-        for media in tweet.extended_entities['media']:
-            text = text.replace(media['url'], '')
-    except AttributeError:
-        pass
-
-    return text
-
-
-def delete_quote_links(text: str, tweet):
-    if is_quote(tweet):
-        text = re.sub(get_tweet_url(tweet.quoted_status), '', text, flags=re.IGNORECASE)
-
-    return text
 
 
 def fix_tweet_text(text: str, tweet):
@@ -215,6 +161,60 @@ def fix_escape_characters(text: str):
     text = text.replace('&gt;', '\>')
 
     return text
+
+
+def replace_hashtag_with_link(text: str, tweet):
+    hashtags_sorted = sorted(tweet.entities['hashtags'], key=lambda x: x['indices'][0], reverse=True)
+
+    for hashtag in hashtags_sorted:
+        start, end = hashtag['indices']
+
+        # text[start] is either '#' or '＃', so this preserves the original character used
+        hashtag_text = text[start] + hashtag['text']
+        text = text[0:start] + get_named_link(hashtag_text, get_hashtag_url(hashtag_text)) + text[end:]
+
+    return text
+
+
+def replace_mention_with_link(text: str, tweet):
+    for mention in tweet.entities['user_mentions']:
+        mention_text = '@' + mention['screen_name']
+
+        if is_reply(tweet) and mention['screen_name'] == tweet.in_reply_to_screen_name:
+            text = re.sub(mention_text, '', text, flags=re.IGNORECASE)
+        else:
+            text = text.replace(mention_text,
+                                get_named_link(mention_text, get_profile_url(screen_name=mention['screen_name'])))
+
+    return text
+
+
+def expand_short_links(text: str, tweet):
+    for url in tweet.entities['urls']:
+        text = text.replace(url['url'], unpack_short_link(url['expanded_url']))
+
+    return text
+
+
+def delete_media_links(text: str, tweet):
+    try:
+        for media in tweet.extended_entities['media']:
+            text = text.replace(media['url'], '')
+    except AttributeError:
+        pass
+
+    return text
+
+
+def delete_quote_links(text: str, tweet):
+    if is_quote(tweet):
+        text = re.sub(get_tweet_url(tweet.quoted_status), '', text, flags=re.IGNORECASE)
+
+    return text
+
+
+def get_named_link(text: str, link: str):
+    return f'[{text}]({link})'
 
 
 def add_tweet_footer(self: discord.Embed, tweet):
