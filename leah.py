@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO, format=formatter)
 active_extensions = ['cogs.Admin', 'cogs.PostQuotedTweet', 'cogs.PostTweetMedia', 'cogs.TwitterStalker',
                      'cogs.PostInstaMedia', 'cogs.PostAmebloMedia', 'cogs.TwitterIconStalker']
 
+
 def main():
     bot = commands.Bot(command_prefix='!!', description='placeholder')
 

@@ -155,10 +155,15 @@ def populate_links(text: str, tweet):
 
 
 def fix_escape_characters(text: str):
-    # Escape Discord's formatting
     text = text.replace('&amp;', '\&')
     text = text.replace('&lt;', '\<')
     text = text.replace('&gt;', '\>')
+
+    # Escape Discord's markdown
+    text = text.replace('`', '\`')
+    text = text.replace('_', '\_')
+    text = text.replace('*', '\*')
+    text = text.replace('~', '\~')
 
     return text
 
