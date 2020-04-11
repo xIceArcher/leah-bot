@@ -229,6 +229,10 @@ class TwitterStalker(commands.Cog):
         if not user:
             await ctx.channel.send(f'User @{screen_name} does not exist!')
 
+        if user.protected:
+            await ctx.channel.send(f'User @{screen_name} is protected!')
+            return
+
         logger.info(f'Archiving @{screen_name}')
         if user.id in self.stalk_destinations and len(self.stalk_destinations[user.id_str]) > 1:
             logger.info("Aborting, user stalked in another channel")
