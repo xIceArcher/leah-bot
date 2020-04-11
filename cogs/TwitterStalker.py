@@ -3,9 +3,11 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+from math import ceil
 from queue import Queue
 from threading import Event, Thread
 
+import discord
 import tweepy
 from aiohttp import ClientConnectorError
 from discord.ext import commands, tasks
@@ -214,6 +216,50 @@ class TwitterStalker(commands.Cog):
             self.tweet_queue.put(tweet)
 
         logger.info(f'Successfully caught up from {from_time}')
+
+    @commands.command()
+    async def archive(self, ctx, screen_name):
+        if ctx.channel.id != 698491606151725056 and ctx.channel.id != 619909548492455937:
+            logger.info(
+                f'Illegal access from channel {self.bot.get_channel(ctx.channel.id).name} in {self.bot.get_channel(ctx.channel.id).guild.name}')
+            return
+
+        user = get_user(screen_name=screen_name)
+
+        if not user:
+            await ctx.channel.send(f'User @{screen_name} does not exist!')
+
+        logger.info(f'Archiving @{screen_name}')
+        if user.id in self.stalk_destinations and len(self.stalk_destinations[user.id_str]) > 1:
+            logger.info("Aborting, user stalked in another channel")
+            return
+
+        if user.statuses_count > 3200:
+            await ctx.channel.send(
+                f'User @{screen_name} has {user.statuses_count} tweets, can only archive latest 3200.')
+
+        tweets = []
+        tweets_json = []
+        num_tweets = min(3200, user.statuses_count)
+        num_fetches = ceil(num_tweets / 200)
+
+        max_id = None
+        for _ in range(num_fetches):
+            for tweet in get_timeline(user.id, 200, max_id):
+                tweets.append(tweet)
+                tweets_json.append(tweet._json)
+
+            max_id = tweets[-1].id - 1
+            await asyncio.sleep(10)
+
+        temp_file_name = f'{screen_name}.json'
+
+        with open(temp_file_name, 'w') as f:
+            f.write(json.dumps(tweets_json, indent=4))
+
+        await ctx.channel.send(file=discord.File(f'{screen_name}.json'))
+        logger.info(f'Archiving @{screen_name} complete')
+        os.remove(temp_file_name)
 
     @tasks.loop(seconds=1.0)
     async def discord_poster(self):

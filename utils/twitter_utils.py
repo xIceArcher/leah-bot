@@ -146,10 +146,10 @@ def get_user(user_id=None, screen_name=None):
     return None
 
 
-def get_timeline(user_id, count=50):
+def get_timeline(user_id, count=50, max_id=None):
     api = get_tweepy()
 
-    return api.user_timeline(user_id=user_id, count=count)
+    return api.user_timeline(user_id=user_id, count=count, max_id=max_id)
 
 
 def get_mock_tweet(user_id, tweet_id, created_at=None):
