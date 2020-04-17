@@ -75,8 +75,8 @@ def get_quoted_tweet_embed(tweet):
                   title=f'Tweet by {tweet.user.name}',
                   description=extract_text(tweet))
 
-    escaped_screen_name = quoted_tweet.user.screen_name.replace('_', '\_')
-    author_text = f'Quoted tweet by {quoted_tweet.user.name} (@{escaped_screen_name})'
+    screen_name = quoted_tweet.user.screen_name
+    author_text = f'Quoted tweet by {quoted_tweet.user.name} (@{screen_name})'
     quoted_link = get_tweet_url(quoted_tweet)
     author_info = get_named_link(author_text, quoted_link) + '\n'
 
@@ -213,7 +213,7 @@ def fix_escape_characters(text: str):
 
 
 def replace_hashtag_with_link(text: str, hashtag_entities=None):
-    if hashtag_entities:
+    if hashtag_entities is not None:
         hashtags_sorted = sorted(hashtag_entities, key=lambda x: x['indices'][0], reverse=True)
 
         for hashtag in hashtags_sorted:
@@ -225,7 +225,7 @@ def replace_hashtag_with_link(text: str, hashtag_entities=None):
     else:
         hashtags = regex.findall(r'(?:[#|＃])[^\d\W][\w]*', text)
         for hashtag in hashtags:
-            text = regex.sub(fr'{hashtag}', fr'{get_named_link(hashtag, get_hashtag_url(hashtag))}', text)
+            text = regex.sub(regex.escape(hashtag), fr'{get_named_link(hashtag, get_hashtag_url(hashtag))}', text)
 
     return text
 
@@ -238,7 +238,7 @@ def replace_mention_with_link(text: str, user_mentions_entities, in_reply_to_scr
         mention_text = '@' + mention['screen_name']
 
         if in_reply_to_screen_name and mention['screen_name'] == in_reply_to_screen_name:
-            text = regex.sub(mention_text, '', text, flags=regex.IGNORECASE)
+            text = regex.sub(regex.escape(mention_text), '', text, flags=regex.IGNORECASE)
         else:
             text = text.replace(mention_text,
                                 get_named_link(mention_text, get_profile_url(screen_name=mention['screen_name'])))
