@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 import discord
 from discord import Embed
@@ -8,11 +9,18 @@ from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls,
     get_user, is_quote, is_retweet, get_hashtag_url, extract_main_photo_url
 from utils.url_utils import unpack_short_link
 
+logger = logging.getLogger(__name__)
+
 
 def get_tweet_embeds(tweet, color: int = None):
     embeds = [get_main_tweet_embed(tweet, color)] + get_remaining_photo_embeds(tweet, color)
 
     embeds[-1].add_tweet_footer(tweet)
+
+    for embed in embeds:
+        if len(embed.description) > 2048:
+            logger.warning(
+                f'Embed description has {len(embed.description)} characters: {embed.description}')
 
     return embeds
 
