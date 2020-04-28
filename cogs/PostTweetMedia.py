@@ -2,7 +2,7 @@ import logging
 
 from discord.ext import commands
 
-from utils.twitter_utils import extract_photo_urls, get_tweet
+from utils.twitter_utils import extract_photo_urls, extract_video_url, get_tweet
 from utils.url_utils import get_tweet_ids
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,23 @@ class PostTweetMedia(commands.Cog):
         for photo in photos:
             await ctx.channel.send(photo)
 
+    @commands.command()
+    async def video(self, ctx, twitter_url: str):
+        tweet_ids = get_tweet_ids(twitter_url)
+
+        if len(tweet_ids) == 0:
+            await ctx.channel.send("Message does not contain a Twitter link!")
+            return
+
+        tweet = get_tweet(tweet_ids[0])
+        video = extract_video_url(tweet)
+
+        if video is None:
+            await ctx.channel.send("Tweet does not have a video!")
+            return
+
+        logger.info(f'Twitter URL: {twitter_url}, Tweet ID: {tweet_ids[0]}, Video: {video}')
+        await ctx.channel.send(video)
 
 def setup(bot):
     bot.add_cog(PostTweetMedia(bot))
