@@ -7,7 +7,7 @@ import requests
 def get_insta_photo_urls(url: str):
     soup = bs4.BeautifulSoup(requests.get(url).content, 'html.parser')
 
-    raw_text = soup.body.script.text.strip()
+    raw_text = soup.body.script.string.strip()
 
     # Get rid of 'window._sharedData =' at front and ';' at back
     start = raw_text.find('=')
@@ -18,9 +18,8 @@ def get_insta_photo_urls(url: str):
     try:
         edges = js['entry_data']['PostPage'][0]['graphql']['shortcode_media']['edge_sidecar_to_children']['edges']
         photo_urls = [edge['node']['display_url'] for edge in edges]
+        return photo_urls
     except KeyError:
         # Post only has one image
-        return []
-
-    photo_urls.pop(0)
-    return photo_urls
+        photo_url = js['entry_data']['PostPage'][0]['graphql']['shortcode_media']['display_url']
+        return [photo_url]
