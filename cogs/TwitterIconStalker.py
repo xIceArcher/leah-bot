@@ -2,7 +2,7 @@ import logging
 
 from discord.ext import commands
 
-from utils.discord_embed_utils import get_user_embed
+from utils.discord_embed_twitter_utils import get_user_embed
 from utils.twitter_utils import get_user
 
 logger = logging.getLogger(__name__)

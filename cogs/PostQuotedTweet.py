@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 from tweepy import TweepError
 
-from utils.discord_embed_utils import get_tweet_embeds
+from utils.discord_embed_twitter_utils import get_tweet_embeds
 from utils.twitter_utils import get_tweet, is_quote, get_tweet_url, extract_video_url
 from utils.url_utils import get_tweet_ids
 

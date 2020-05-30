@@ -1,11 +1,13 @@
 import json
+from datetime import datetime
 
 import bs4
 import requests
 
 
-def get_insta_post_info(url: str):
-    soup = bs4.BeautifulSoup(requests.get(url).content, 'html.parser')
+def get_insta_post(id: str):
+    api_url = f'https://instagram.com/tv/{id}'
+    soup = bs4.BeautifulSoup(requests.get(api_url).content, 'html.parser')
 
     raw_text = soup.body.script.string.strip()
 
@@ -14,23 +16,38 @@ def get_insta_post_info(url: str):
     end = raw_text.rfind(';')
 
     js = json.loads(raw_text[start + 1:end])
+    return js['entry_data']['PostPage'][0]['graphql']['shortcode_media']
 
-    ret = dict()
+def get_insta_post_url(id: str):
+    return f'https://instagram.com/p/{id}'
 
-    # User
-    owner_field = js['entry_data']['PostPage'][0]['graphql']['shortcode_media']['owner']
-    ret['username'] = owner_field['username']
-    ret['profile_pic_url'] = owner_field['profile_pic_url']
-    ret['full_name'] = owner_field['full_name']
+def get_insta_user_url(post: dict):
+    return f'https://instagram.com/{extract_username(post)}'
 
-    # Photos
+def extract_username(post: dict):
+    return post['owner']['username']
+
+def extract_profile_pic_url(post: dict):
+    return post['owner']['profile_pic_url']
+
+def extract_full_name(post: dict):
+    return post['owner']['full_name']
+
+def extract_photos(post: dict):
     try:
-        edges = js['entry_data']['PostPage'][0]['graphql']['shortcode_media']['edge_sidecar_to_children']['edges']
-        ret['photos'] = [edge['node']['display_url'] for edge in edges]
+        edges = post['edge_sidecar_to_children']['edges']
+        return [edge['node']['display_url'] for edge in edges]
     except KeyError:
         # Post only has one image
-        ret['photos'] = [js['entry_data']['PostPage'][0]['graphql']['shortcode_media']['display_url']]
+        return [post['display_url']]
 
-    ret['text'] = js['entry_data']['PostPage'][0]['graphql']['shortcode_media']['edge_media_to_caption']['edges'][0]['node']['text']
-    ret['url'] = url
-    return ret
+def extract_text(post: dict, max_length: int):
+    text = post['edge_media_to_caption']['edges'][0]['node']['text']
+    return text[:max_length] + ('...' if len(text) > max_length else '')
+
+def extract_likes(post: dict):
+    return post['edge_media_preview_like']['count']
+
+def extract_timestamp(post: dict):
+    return datetime.utcfromtimestamp(int(post['taken_at_timestamp']))
+

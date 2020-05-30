@@ -13,7 +13,7 @@ from aiohttp import ClientConnectorError
 from discord.ext import commands, tasks
 from tweepy import TweepError
 
-from utils.discord_embed_utils import get_tweet_embeds, get_color_embed
+from utils.discord_embed_twitter_utils import get_tweet_embeds, get_color_embed
 from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
     extract_displayed_video_url, get_timeline, get_mock_tweet, extract_visible_id
 from utils.url_utils import get_tweet_ids
