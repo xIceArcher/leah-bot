@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from utils.discord_utils import clean_message
 from utils.discord_embed_utils import get_photo_embed
-from utils.discord_embed_insta_utils import get_insta_embeds
+from utils.discord_embed_insta_utils import get_insta_embeds, get_insta_video_url
 from utils.url_utils import get_insta_ids
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,11 @@ class PostInstaMedia(commands.Cog):
                         break
                     except ClientConnectionError:
                         pass
+
+            video_url = get_insta_video_url(insta_id)
+
+            if video_url:
+                await message.channel.send(video_url)
 
             logger.info(f"Instagram ID: {insta_id} sent")
 

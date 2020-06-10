@@ -24,6 +24,9 @@ def get_insta_post_url(id: str):
 def get_insta_user_url(post: dict):
     return f'https://instagram.com/{extract_username(post)}'
 
+def is_video(post: dict):
+    return post['is_video']
+
 def extract_username(post: dict):
     return post['owner']['username']
 
@@ -40,6 +43,12 @@ def extract_photos(post: dict):
     except KeyError:
         # Post only has one image
         return [post['display_url']]
+
+def extract_video(post: dict):
+    if is_video(post):
+        return post['video_url']
+    else:
+        return None
 
 def extract_text(post: dict, max_length: int):
     text = post['edge_media_to_caption']['edges'][0]['node']['text']
