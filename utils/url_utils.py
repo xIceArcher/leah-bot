@@ -31,6 +31,17 @@ def get_ameblo_links(s: str):
     return list(OrderedDict.fromkeys(regex.findall(s)))
 
 
+def get_youtube_video_ids(s: str):
+    ret = []
+
+    regex = re.compile(r'http[s]?://(?:w{3}\.)?youtube\.com/watch\?v=([A-Za-z0-9_\-]+)')
+    ret.extend(regex.findall(s))
+
+    regex2 = re.compile(r'http[s]?://(?:w{3}\.)?youtu\.be/([A-Za-z0-9_\-]+)')
+    ret.extend(regex.findall(s))
+
+    return list(OrderedDict.fromkeys(ret))
+
 def unpack_short_link(s: str):
     MAX_REDIRECTS = 5
     curr_redirects = 0
