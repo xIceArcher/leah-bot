@@ -28,7 +28,7 @@ class PostYoutubeInfo(commands.Cog):
             embed = get_youtube_livestream_embed(video_id, only_livestream=True)
             await message.channel.send(embed=embed)
 
-            logger.info(f"Youtube video ID: {video_id} sent")
+            logger.info(f"Youtube video ID: {video_id} sent to {message.channel.name} in {message.guild.name}")
 
         await self.bot.process_commands(message)
 
