@@ -34,11 +34,11 @@ def get_ameblo_links(s: str):
 def get_youtube_video_ids(s: str):
     ret = []
 
-    regex = re.compile(r'http[s]?://(?:w{3}\.)?youtube\.com/watch\?v=([A-Za-z0-9_\-]+)')
+    regex = re.compile(r'(?:http[s]?://)(?:w{3}\.)?youtube\.com/watch\?v=([A-Za-z0-9_\-]+)')
     ret.extend(regex.findall(s))
 
-    regex2 = re.compile(r'http[s]?://(?:w{3}\.)?youtu\.be/([A-Za-z0-9_\-]+)')
-    ret.extend(regex.findall(s))
+    regex2 = re.compile(r'(?:http[s]?://)?(?:w{3}\.)?youtu\.be/([A-Za-z0-9_\-]+)')
+    ret.extend(regex2.findall(s))
 
     return list(OrderedDict.fromkeys(ret))
 
