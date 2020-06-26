@@ -4,22 +4,14 @@ from datetime import datetime
 import bs4
 import requests
 
+INSTAGRAM_PROXY_URL = 'https://instagram.com/tv/'
 
-def get_insta_post(id: str):
-    api_url = f'https://instagram.com/tv/{id}'
-    soup = bs4.BeautifulSoup(requests.get(api_url).content, 'html.parser')
+def get_insta_post(insta_post_id: str):
+    request_url = INSTAGRAM_PROXY_URL + insta_post_id
+    return json.loads(requests.get(request_url).content)
 
-    raw_text = soup.body.script.string.strip()
-
-    # Get rid of 'window._sharedData =' at front and ';' at back
-    start = raw_text.find('=')
-    end = raw_text.rfind(';')
-
-    js = json.loads(raw_text[start + 1:end])
-    return js['entry_data']['PostPage'][0]['graphql']['shortcode_media']
-
-def get_insta_post_url(id: str):
-    return f'https://instagram.com/p/{id}'
+def get_insta_post_url(insta_post_id: str):
+    return f'https://instagram.com/p/{insta_post_id}'
 
 def get_insta_user_url(post: dict):
     return f'https://instagram.com/{extract_username(post)}'
