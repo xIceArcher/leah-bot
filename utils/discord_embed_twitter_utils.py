@@ -2,6 +2,7 @@ import datetime
 import logging
 
 import discord
+import urllib
 from discord import Embed
 from regex import regex
 
@@ -256,7 +257,8 @@ def expand_short_links(text: str, urls_entities):
         return text
 
     for url in urls_entities:
-        text = text.replace(url['url'], unpack_short_link(url['expanded_url']))
+        full_link = urllib.parse.unquote(unpack_short_link(url['expanded_url']))
+        text = text.replace(url['url'], get_named_link(full_link, full_link))
 
     return text
 
