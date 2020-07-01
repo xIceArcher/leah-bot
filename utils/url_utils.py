@@ -22,8 +22,15 @@ def get_photo_url(url: str, size='orig'):
 
 
 def get_insta_ids(s: str):
+    ret = []
+
     regex = re.compile(r'http[s]?://(?:w{3}\.)?instagram\.com/p/([A-Za-z0-9\-_]*)/?(?:\?[^ \r\n]*)?')
-    return list(OrderedDict.fromkeys(regex.findall(s)))
+    ret.extend(regex.findall(s))
+
+    regex2 = re.compile(r'http[s]?://(?:w{3}\.)?instagram\.com/tv/([A-Za-z0-9\-_]*)/?(?:\?[^ \r\n]*)?')
+    ret.extend(regex2.findall(s))
+
+    return list(OrderedDict.fromkeys(ret))
 
 
 def get_ameblo_links(s: str):
