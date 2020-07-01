@@ -13,7 +13,7 @@ def init_youtube(credentials_file='credentials.json'):
 
     credentials = get_credentials(credentials_file)
 
-    youtube_api = googleapiclient.discovery.build(API_SERVICE_NAME, API_VERSION, developerKey=credentials['google']['apiKey'])
+    youtube_api = googleapiclient.discovery.build(API_SERVICE_NAME, API_VERSION, developerKey=credentials['google']['apiKey'], cache_discovery=False)
 
 
 def get_youtube():
@@ -55,6 +55,18 @@ def get_video_url(id: str):
 
 def get_channel_url(id: str):
     return f'https://www.youtube.com/channel/{id}'
+
+
+def get_thumbnail_url(thumbnail_dict: dict):
+    max_res = None
+    max_res_url = None
+
+    for thumbnail in thumbnail_dict.values():
+        if max_res is None or thumbnail['width'] * thumbnail['height'] > max_res:
+            max_res = thumbnail['width'] * thumbnail['height']
+            max_res_url = thumbnail['url']
+
+    return max_res_url
 
 
 def is_livestream(video: dict):

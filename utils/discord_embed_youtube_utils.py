@@ -6,7 +6,7 @@ import discord
 from discord import Embed
 from regex import regex
 
-from utils.youtube_utils import get_video, get_channel, get_video_url, get_channel_url, is_livestream
+from utils.youtube_utils import get_video, get_channel, get_video_url, get_channel_url, is_livestream, get_thumbnail_url
 from utils.utils import format_time_delta
 
 logger = logging.getLogger(__name__)
@@ -21,17 +21,18 @@ def get_youtube_livestream_embed(video_id: str, only_livestream=True):
         embed = Embed(url=get_video_url(video_id),
                       title=video_info['snippet']['title'])
 
-        embed.set_thumbnail(url=video_info['snippet']['thumbnails']['default']['url'])
+        embed.set_thumbnail(url=get_thumbnail_url(video_info['snippet']['thumbnails']))
 
         embed.set_author(name=video_info['snippet']['channelTitle'],
                          url=get_channel_url(channel_id),
-                         icon_url=channel_info['snippet']['thumbnails']['default']['url'])
+                         icon_url=get_thumbnail_url(channel_info['snippet']['thumbnails']))
 
         start_time = parser.isoparse(video_info['liveStreamingDetails']['scheduledStartTime'])
         embed.timestamp = start_time
 
         if datetime.now(timezone.utc) - start_time > timedelta(0):
             embed.add_field(name='Started', value=f'{format_time_delta(datetime.now(timezone.utc) - start_time)} ago')
+            embed.add_field(name='Viewers', value=video_info['liveStreamingDetails']['concurrentViewers'])
             embed.color = int('FF0000', base=16)
         else:
             time_to_start = start_time - datetime.now(timezone.utc)
