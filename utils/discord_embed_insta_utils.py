@@ -8,7 +8,7 @@ from utils.discord_embed_utils import get_photo_embed
 from utils.instagram_utils import get_insta_post, get_insta_post_url, get_insta_user_url, \
     extract_full_name, extract_username, extract_profile_pic_url, \
     extract_likes, extract_timestamp, extract_photos, extract_text, \
-    is_video, extract_video
+    extract_videos
 
 
 logger = logging.getLogger(__name__)
@@ -40,13 +40,10 @@ def get_insta_embeds(id: str):
     return embeds
 
 
-def get_insta_video_url(id: str):
+def get_insta_video_urls(id: str):
     post = get_insta_post(id)
 
-    if is_video(post):
-        return extract_video(post)
-    else:
-        return None
+    return extract_videos(post)
 
 
 def add_insta_footer(self: discord.Embed, post):
