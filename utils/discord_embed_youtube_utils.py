@@ -32,7 +32,12 @@ def get_youtube_livestream_embed(video_id: str, only_livestream=True):
 
         if datetime.now(timezone.utc) - start_time > timedelta(0):
             embed.add_field(name='Started', value=f'{format_time_delta(datetime.now(timezone.utc) - start_time)} ago')
-            embed.add_field(name='Viewers', value=video_info['liveStreamingDetails']['concurrentViewers'])
+
+            try:
+                embed.add_field(name='Viewers', value=video_info['liveStreamingDetails']['concurrentViewers'])
+            except KeyError:
+                pass
+
             embed.color = int('FF0000', base=16)
         else:
             time_to_start = start_time - datetime.now(timezone.utc)
