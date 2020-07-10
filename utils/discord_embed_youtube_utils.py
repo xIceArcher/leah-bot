@@ -1,6 +1,7 @@
 from dateutil import parser
 from datetime import datetime, timezone, timedelta
 import logging
+import isodate
 
 import discord
 from discord import Embed
@@ -12,7 +13,7 @@ from utils.utils import format_time_delta
 logger = logging.getLogger(__name__)
 
 def get_youtube_livestream_embed(video_id: str, only_livestream=True):
-    video_info = get_video(video_id, parts=['liveStreamingDetails'])
+    video_info = get_video(video_id, parts=['liveStreamingDetails', 'contentDetails'])
 
     channel_id = video_info['snippet']['channelId']
     channel_info = get_channel(channel_id)
@@ -42,6 +43,11 @@ def get_youtube_livestream_embed(video_id: str, only_livestream=True):
         else:
             time_to_start = start_time - datetime.now(timezone.utc)
             embed.add_field(name='Starts in', value=format_time_delta(time_to_start))
+
+            dur = isodate.parse_duration(video_info['contentDetails']['duration'])
+
+            if dur > timedelta(0):
+                embed.add_field(name='Duration', value=dur)
 
             if time_to_start < timedelta(hours=1):
                 embed.color = int('FF9300', base=16)
