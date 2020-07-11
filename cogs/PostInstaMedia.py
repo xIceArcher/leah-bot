@@ -39,7 +39,7 @@ class PostInstaMedia(commands.Cog):
                 for video_url in video_urls:
                     await message.channel.send(video_url)
 
-            logger.info(f"Instagram ID: {insta_id} sent")
+            logger.info(f"Instagram ID: {insta_id} sent to {message.channel.name} in {message.guild.name}")
 
         await self.bot.process_commands(message)
 
