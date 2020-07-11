@@ -12,7 +12,7 @@ from utils.instagram_utils import get_insta_post, get_insta_post_url, get_insta_
 
 
 logger = logging.getLogger(__name__)
-
+INSTA_COLOR = int('CE0072', base=16)
 
 def get_insta_embeds(id: str):
     post = get_insta_post(id)
@@ -26,6 +26,7 @@ def get_insta_embeds(id: str):
                           url=f'{get_insta_user_url(post)}',
                           icon_url=extract_profile_pic_url(post))
 
+    main_embed.color = INSTA_COLOR
     main_embed.add_field(name="Likes", value=extract_likes(post), inline=True)
 
     photos = extract_photos(post)
@@ -34,7 +35,7 @@ def get_insta_embeds(id: str):
     embeds.append(main_embed)
 
     for photo in photos[1:]:
-        embeds.append(get_photo_embed(photo))
+        embeds.append(get_photo_embed(photo, color=INSTA_COLOR))
 
     embeds[-1].add_insta_footer(post)
     return embeds
