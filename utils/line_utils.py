@@ -5,7 +5,12 @@ import json
 def get_line_live_m3u8_links(broadcast_link: str):
     LINE_LIVE_URL_TEMPLATE = 'https://lssapi.line-apps.com/v1/live/playInfo?contentId={}'
 
-    soup = bs4.BeautifulSoup(requests.get(broadcast_link).content, 'html.parser')
+    try:
+        resp = requests.get(broadcast_link).content
+    except requests.exceptions.InvalidSchema:
+        return None
+
+    soup = bs4.BeautifulSoup(resp, 'html.parser')
     data_broadcast_json = soup.find('div').get('data-broadcast')
     if data_broadcast_json is None:
         return None
