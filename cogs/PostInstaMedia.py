@@ -25,7 +25,7 @@ class PostInstaMedia(commands.Cog):
         for insta_id in get_insta_ids(cleaned_message):
             embeds = get_insta_embeds(insta_id)
 
-            for embed in embeds[1:]:
+            for embed in embeds:
                 while True:
                     try:
                         await message.channel.send(embed=embed)
