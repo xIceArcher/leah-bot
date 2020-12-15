@@ -14,17 +14,24 @@ from utils.instagram_utils import get_insta_post, get_insta_post_url, get_insta_
 logger = logging.getLogger(__name__)
 INSTA_COLOR = int('CE0072', base=16)
 
-def get_insta_embeds(id: str):
-    post = get_insta_post(id)
+def get_insta_embeds(shortcode: str=None, post: dict=None, user: dict=None):
+    if post is None:
+        post = get_insta_post(shortcode)
+
+    if shortcode is None:
+        shortcode = post['shortcode']
+
+    user_info_source = user if user is not None else post['owner']
+
     embeds = []
 
-    main_embed = Embed(url=get_insta_post_url(id),
-                       title=f'Instagram post by {extract_full_name(post)}',
+    main_embed = Embed(url=get_insta_post_url(shortcode),
+                       title=f'Instagram post by {extract_full_name(user_info_source)}',
                        description=extract_text(post, max_length=240))
 
-    main_embed.set_author(name=f'{extract_full_name(post)} ({extract_username(post)})',
-                          url=f'{get_insta_user_url(post)}',
-                          icon_url=extract_profile_pic_url(post))
+    main_embed.set_author(name=f'{extract_full_name(user_info_source)} ({extract_username(user_info_source)})',
+                          url=f'{get_insta_user_url(user_info_source)}',
+                          icon_url=extract_profile_pic_url(user_info_source))
 
     main_embed.color = INSTA_COLOR
     main_embed.add_field(name="Likes", value=extract_likes(post), inline=True)
@@ -41,8 +48,9 @@ def get_insta_embeds(id: str):
     return embeds
 
 
-def get_insta_video_urls(id: str):
-    post = get_insta_post(id)
+def get_insta_video_urls(shortcode: str=None, post: dict=None):
+    if post is None:
+        post = get_insta_post(shortcode)
 
     return extract_videos(post)
 

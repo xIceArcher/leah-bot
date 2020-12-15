@@ -21,7 +21,7 @@ def get_photo_url(url: str, size='orig'):
     return f'{base}?format={extension}&name={size}'
 
 
-def get_insta_ids(s: str):
+def get_insta_shortcodes(s: str):
     ret = []
 
     regex = re.compile(r'http[s]?://(?:w{3}\.)?instagram\.com/p/([A-Za-z0-9\-_]*)/?(?:\?[^ \r\n]*)?')
