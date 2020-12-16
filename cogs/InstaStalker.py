@@ -76,6 +76,7 @@ class InstaStalker(commands.Cog):
 
                     logger.info(f'Instagram ID: {post_id} sent to {channel.name} in {channel.guild.name}')
 
+            self.last_post_count[user_id] = curr_post_count
             await asyncio.sleep(10)
 
     def cog_unload(self):

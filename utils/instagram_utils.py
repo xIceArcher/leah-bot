@@ -57,8 +57,11 @@ def extract_videos(post: dict):
             return None
 
 def extract_text(post: dict, max_length: int):
-    text = post['edge_media_to_caption']['edges'][0]['node']['text']
-    return text[:max_length] + ('...' if len(text) > max_length else '')
+    try:
+        text = post['edge_media_to_caption']['edges'][0]['node']['text']
+        return text[:max_length] + ('...' if len(text) > max_length else '')
+    except IndexError:
+        return ''
 
 def extract_likes(post: dict):
     return post['edge_media_preview_like']['count']
