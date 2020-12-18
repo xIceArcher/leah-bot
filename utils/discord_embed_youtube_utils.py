@@ -13,10 +13,19 @@ from utils.utils import format_time_delta
 logger = logging.getLogger(__name__)
 
 def get_youtube_livestream_embed(video_id: str, only_livestream=True):
-    video_info = get_video(video_id, parts=['liveStreamingDetails', 'contentDetails'])
+    try:
+        video_info = get_video(video_id, parts=['liveStreamingDetails', 'contentDetails'])
+    except:
+        logger.exception(f'Could not get video info for {video_id}')
+        return None
 
     channel_id = video_info['snippet']['channelId']
-    channel_info = get_channel(channel_id)
+
+    try:
+        channel_info = get_channel(channel_id)
+    except:
+        logger.exception(f'Could not get channel info for {video_id}')
+        return None
 
     if is_livestream(video_info):
         embed = Embed(url=get_video_url(video_id),
@@ -28,7 +37,12 @@ def get_youtube_livestream_embed(video_id: str, only_livestream=True):
                          url=get_channel_url(channel_id),
                          icon_url=get_thumbnail_url(channel_info['snippet']['thumbnails']))
 
-        start_time = parser.isoparse(video_info['liveStreamingDetails']['scheduledStartTime'])
+        try:
+            start_time = parser.isoparse(video_info['liveStreamingDetails']['scheduledStartTime'])
+        except KeyError:
+            logger.exception(f'Video {video_id} is a livestream but has no start time')
+            return None
+
         embed.timestamp = start_time
 
         if datetime.now(timezone.utc) - start_time > timedelta(0):

@@ -1,4 +1,5 @@
 import googleapiclient.discovery
+import time
 
 from utils.credentials_utils import get_credentials
 
@@ -6,7 +7,7 @@ youtube_api = None
 
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
-
+MAX_RETRIES = 5
 
 def init_youtube(credentials_file='credentials.json'):
     global youtube_api
@@ -34,7 +35,17 @@ def get_video(id: str, parts: list = None):
         parts_str = 'snippet'
 
     request = api.videos().list(part=parts_str,id=id)
-    return request.execute()['items'][0]
+
+    num_retries = 0
+    while True:
+        try:
+            return request.execute()['items'][0]
+        except Exception as e:
+            if num_retries == MAX_RETRIES:
+                raise e
+
+            num_retries += 1
+            time.sleep(2)
 
 
 def get_channel(id: str, parts: list = None):
@@ -46,7 +57,17 @@ def get_channel(id: str, parts: list = None):
         parts_str = 'snippet'
 
     request = api.channels().list(part=parts_str,id=id)
-    return request.execute()['items'][0]
+
+    num_retries = 0
+    while True:
+        try:
+            return request.execute()['items'][0]
+        except Exception as e:
+            if num_retries == MAX_RETRIES:
+                raise e
+
+            num_retries += 1
+            time.sleep(2)
 
 
 def get_video_url(id: str):
