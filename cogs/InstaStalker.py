@@ -8,7 +8,7 @@ from aiohttp import ClientConnectionError
 from discord.ext import commands, tasks
 
 from utils.instagram_utils import get_insta_timeline, extract_post_count, extract_recent_posts
-from utils.discord_embed_insta_utils import get_insta_embeds, get_insta_video_urls
+from utils.discord_embed_insta_utils import get_insta_embeds, get_insta_video_urls, get_insta_post_url
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class InstaStalker(commands.Cog):
             user_timeline = get_insta_timeline(user_id)
             self.last_post_count[user_id] = extract_post_count(user_timeline)
 
-            logger.info(f'User {user_id} has {extract_post_count(user_timeline)} posts')
+            logger.info(f'User @{user_id} has {extract_post_count(user_timeline)} posts')
             time.sleep(5)
 
     @tasks.loop(hours=6.0)
@@ -55,7 +55,7 @@ class InstaStalker(commands.Cog):
                 new_posts.reverse()
 
                 for post in new_posts:
-                    post_id = post['shortcode']
+                    shortcode = post['shortcode']
                     embeds = get_insta_embeds(post=post, user=user_timeline)
                     video_urls = get_insta_video_urls(post=post)
 
@@ -74,7 +74,7 @@ class InstaStalker(commands.Cog):
                             for video_url in video_urls:
                                 await channel.send(video_url)
 
-                    logger.info(f'Instagram ID: {post_id} sent to {channel.name} in {channel.guild.name}')
+                    logger.info(f'{get_insta_post_url(shortcode)} sent to #{channel.name} in {channel.guild.name}')
 
             self.last_post_count[user_id] = curr_post_count
             await asyncio.sleep(10)

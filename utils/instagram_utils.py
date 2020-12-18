@@ -7,16 +7,16 @@ import requests
 INSTAGRAM_POST_PROXY_URL = 'https://instagram.com/tv/'
 INSTAGRAM_TIMELINE_PROXY_URL = 'https://instagram.com/tv/'
 
-def get_insta_post(insta_post_id: str):
-    request_url = INSTAGRAM_POST_PROXY_URL + insta_post_id
+def get_insta_post(shortcode: str):
+    request_url = INSTAGRAM_POST_PROXY_URL + shortcode
     return json.loads(requests.get(request_url).content)
 
-def get_insta_timeline(insta_username: str):
-    request_url = INSTAGRAM_TIMELINE_PROXY_URL + insta_username
+def get_insta_timeline(username: str):
+    request_url = INSTAGRAM_TIMELINE_PROXY_URL + username
     return json.loads(requests.get(request_url).content)
 
-def get_insta_post_url(insta_post_id: str):
-    return f'https://instagram.com/p/{insta_post_id}'
+def get_insta_post_url(shortcode: str):
+    return f'https://instagram.com/p/{shortcode}'
 
 def get_insta_user_url(post: dict):
     return f'https://instagram.com/{extract_username(post)}'

@@ -4,7 +4,7 @@ from discord.ext import commands
 
 from utils.credentials_utils import get_credentials
 
-formatter = '%(name)s : %(asctime)s - %(message)s'
+formatter = '%(levelname)s %(name)s:%(lineno)d: %(asctime)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=formatter)
 
 active_extensions = ['cogs.Admin', 'cogs.PostQuotedTweet', 'cogs.PostTweetMedia', 'cogs.TwitterStalker', 'cogs.PostTime',

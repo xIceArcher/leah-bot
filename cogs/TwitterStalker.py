@@ -87,10 +87,8 @@ class TwitterStalker(commands.Cog):
         if ctx.channel.id not in self.stalk_destinations[user_id]:
             self.stalk_destinations[user_id].append(ctx.channel.id)
             if time:
-                logger.info(
-                    f'Stalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name} with timeout {time} minutes')
-                await ctx.channel.send(
-                    f'Stalked @{user.screen_name} in this channel! Will auto-unstalk after {time} minutes.')
+                logger.info(f'Stalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name} for {time} minutes')
+                await ctx.channel.send(f'Stalked @{user.screen_name} in this channel! Will auto-unstalk after {time} minutes.')
             else:
                 logger.info(f'Stalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name}')
                 await ctx.channel.send(f'Stalked @{user.screen_name} in this channel!')
@@ -114,7 +112,7 @@ class TwitterStalker(commands.Cog):
 
     async def auto_unstalk(self, ctx, screen_name: str, time: int = None):
         await asyncio.sleep(time * 60)
-        logger.info(f"Auto-unstalking @{screen_name} in {ctx.channel.name} in {ctx.guild.name}")
+        logger.info(f"Auto-unstalking @{screen_name} in #{ctx.channel.name} in {ctx.guild.name}")
         await self.do_unstalk(ctx, screen_name, timed=True)
 
     async def do_unstalk(self, ctx, screen_name: str, timed: bool):
@@ -137,7 +135,7 @@ class TwitterStalker(commands.Cog):
             del self.stalk_destinations[user_id]
             self.restart_flag.set()
 
-        logger.info(f'Unstalked @{user.screen_name} in {ctx.channel.name} in {ctx.guild.name}')
+        logger.info(f'Unstalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name}')
         await ctx.channel.send(f'Unstalked @{user.screen_name} in this channel!')
 
         self.stalk_users[ctx.channel.id].remove(user_id)
@@ -220,8 +218,7 @@ class TwitterStalker(commands.Cog):
     @commands.command()
     async def archive(self, ctx, screen_name):
         if ctx.channel.id != 698491606151725056 and ctx.channel.id != 619909548492455937:
-            logger.info(
-                f'Illegal access from channel {self.bot.get_channel(ctx.channel.id).name} in {self.bot.get_channel(ctx.channel.id).guild.name}')
+            logger.info(f'Illegal access from channel #{ctx.channel.name} in {ctx.guild.name}')
             return
 
         user = get_user(screen_name=screen_name)
@@ -276,7 +273,7 @@ class TwitterStalker(commands.Cog):
 
             try:
                 extended_tweet = get_tweet(short_tweet.id)
-            except TweepError as e:
+            except TweepError:
                 self.handle_posting_error(error_tweet=short_tweet)
                 continue
 
@@ -320,9 +317,7 @@ class TwitterStalker(commands.Cog):
             return
 
         self.last_tweet_time = datetime.now(timezone.utc)
-        logger.info(
-            f'{get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name}'
-            f' in {self.bot.get_channel(channel_id).guild.name}')
+        logger.info(f'{get_tweet_url(tweet)} sent to channel #{channel.name} in {channel.guild.name}')
 
     async def handle_posted_retweet(self, tweet, channel_id):
         RETWEETED_BY_FIELD_NAME = 'Retweeted by'
@@ -352,14 +347,13 @@ class TwitterStalker(commands.Cog):
             new_embed.add_field(name=RETWEETED_BY_FIELD_NAME, value=str_appended, inline=False)
 
         await main_message.edit(embed=new_embed)
-        logger.info(
-            f'Retweet {get_tweet_url(tweet)} sent to channel {self.bot.get_channel(channel_id).name} in {self.bot.get_channel(channel_id).guild.name}')
+        logger.info(f'Retweet {get_tweet_url(tweet)} sent to channel #{channel.name} in {channel.guild.name}')
 
     def handle_posting_error(self, error_tweet):
         if hasattr(error_tweet, 'curr_retries'):
             if error_tweet.curr_retries > 5:
-                logger.info(
-                    f'Failed to post tweet {error_tweet.id} from user {get_user(user_id=error_tweet.user.id).name}')
+                error_username = get_user(user_id=error_tweet.user.id).name
+                logger.info(f'Failed to post tweet {error_tweet.id} from user {error_username}')
             else:
                 error_tweet.curr_retries += 1
                 self.tweet_queue.put(error_tweet)
@@ -387,9 +381,8 @@ class TwitterStalker(commands.Cog):
     def start_stream_thread(self):
         try:
             self.stream.filter(follow=list(self.stalk_destinations))
-        except Exception as e:
+        except:
             logger.info('Stream crashed')
-            logger.exception(e)
         finally:
             self.restart_flag.set()
             logger.info('Stream terminated, awaiting restart...')

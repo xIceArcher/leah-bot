@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 
 from utils.discord_embed_twitter_utils import get_tweet_embeds
-from utils.twitter_utils import extract_photo_urls, extract_video_url, get_tweet
+from utils.twitter_utils import extract_photo_urls, extract_video_url, get_tweet, get_tweet_url
 from utils.url_utils import get_tweet_ids
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class PostTweetMedia(commands.Cog):
         for embed in get_tweet_embeds(tweet):
             await ctx.channel.send(embed=embed)
 
-        logger.info(f'Twitter URL: {twitter_url}, Tweet ID: {tweet_ids[0]}')
+        logger.info(f'{get_tweet_url(tweet)} sent to #{ctx.channel.name} in {ctx.guild.name}')
 
     @commands.command()
     async def photos(self, ctx, twitter_url: str):
@@ -45,7 +45,7 @@ class PostTweetMedia(commands.Cog):
             await ctx.channel.send("Tweet does not have any photos!")
             return
 
-        logger.info(f'Twitter URL: {twitter_url}, Tweet ID: {tweet_ids[0]}, Photos: {photos}')
+        logger.info(f'{get_tweet_url(tweet)} sent to #{ctx.channel.name} in {ctx.guild.name}')
 
         for photo in photos:
             await ctx.channel.send(photo)
@@ -65,7 +65,7 @@ class PostTweetMedia(commands.Cog):
             await ctx.channel.send("Tweet does not have a video!")
             return
 
-        logger.info(f'Twitter URL: {twitter_url}, Tweet ID: {tweet_ids[0]}, Video: {video}')
+        logger.info(f'{get_tweet_url(tweet)} sent to #{ctx.channel.name} in {ctx.guild.name}')
         await ctx.channel.send(video)
 
 def setup(bot):

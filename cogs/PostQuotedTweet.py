@@ -39,7 +39,7 @@ class PostQuotedTweet(commands.Cog):
             if video:
                 await ctx.channel.send(video)
 
-            logger.info(f'Tweet ID: {tweet_id}, Quoted Tweet: {get_tweet_url(tweet.quoted_status)}')
+            logger.info(f'{get_tweet_url(tweet)} sent to #{ctx.channel.name} in {ctx.guild.name}')
         else:
             await ctx.channel.send(f'This tweet does not quote any other tweet!')
 
