@@ -6,7 +6,7 @@ from discord.ext import commands
 logger = logging.getLogger(__name__)
 
 
-class Admin(commands.Cog):
+class LineLive(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -23,4 +23,4 @@ class Admin(commands.Cog):
                                                   f"**Adaptive resolution** (use this if your connection might be slow): {abr_m3u8}")
 
 def setup(bot):
-    bot.add_cog(Admin(bot))
+    bot.add_cog(LineLive(bot))
