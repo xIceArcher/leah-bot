@@ -47,7 +47,7 @@ class PostTweetMedia(commands.Cog):
 
         logger.info(f'{get_tweet_url(tweet)} sent to #{ctx.channel.name} in {ctx.guild.name}')
 
-        for photo in photos:
+        for photo in photos[1:]:
             await ctx.channel.send(photo)
 
     @commands.command()
