@@ -43,7 +43,7 @@ class InstaStalker(commands.Cog):
             logger.info(f'User @{user_id} has {extract_post_count(user_timeline)} posts')
             time.sleep(5)
 
-    @tasks.loop(hours=6.0)
+    @tasks.loop(minutes=30.0)
     async def discord_poster(self):
         for user_id in self.stalk_destinations:
             user_timeline = get_insta_timeline(user_id)
