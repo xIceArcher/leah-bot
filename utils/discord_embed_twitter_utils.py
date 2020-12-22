@@ -257,8 +257,9 @@ def expand_short_links(text: str, urls_entities):
         return text
 
     for url in urls_entities:
-        full_link = urllib.parse.unquote(unpack_short_link(url['expanded_url']))
-        text = text.replace(url['url'], get_named_link(full_link, full_link))
+        full_link = unpack_short_link(url['expanded_url'])
+        escaped_link = urllib.parse.unquote(full_link)
+        text = text.replace(url['url'], get_named_link(escaped_link, full_link))
 
     return text
 
