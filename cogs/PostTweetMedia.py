@@ -41,7 +41,7 @@ class PostTweetMedia(commands.Cog):
         tweet = get_tweet(tweet_ids[0])
         photos = extract_photo_urls(tweet)
 
-        if len(photos) == 0:
+        if not photos:
             await ctx.channel.send("Tweet does not have any photos!")
             return
 
