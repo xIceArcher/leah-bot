@@ -8,7 +8,7 @@ formatter = '%(levelname)s %(name)s:%(lineno)d: %(asctime)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=formatter)
 
 active_extensions = ['cogs.Admin', 'cogs.PostQuotedTweet', 'cogs.PostTweetMedia', 'cogs.TwitterStalker', 'cogs.PostTime',
-                     'cogs.PostInstaMedia', 'cogs.PostAmebloMedia', 'cogs.TwitterIconStalker', 'cogs.PostYoutubeInfo', 'cogs.InstaStalker']
+                     'cogs.PostInstaMedia', 'cogs.TwitterIconStalker', 'cogs.PostYoutubeInfo', 'cogs.InstaStalker']
 
 bot = commands.Bot(command_prefix='!!', description='placeholder')
 
