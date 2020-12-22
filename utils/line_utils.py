@@ -21,7 +21,7 @@ def get_line_live_m3u8_links(broadcast_link: str):
         return None
 
     actual_link = LINE_LIVE_URL_TEMPLATE.format(lsa_path)
-    m3u8_json = json.loads(requests.get(actual_link).content)
+    m3u8_json = requests.get(actual_link).json()
 
     try:
         play_urls = m3u8_json['playUrls']

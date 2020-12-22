@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 
 import bs4
@@ -9,11 +8,11 @@ INSTAGRAM_TIMELINE_PROXY_URL = 'https://instagram.com/tv/'
 
 def get_insta_post(shortcode: str):
     request_url = INSTAGRAM_POST_PROXY_URL + shortcode
-    return json.loads(requests.get(request_url).content)
+    return requests.get(request_url).json()
 
 def get_insta_timeline(username: str):
     request_url = INSTAGRAM_TIMELINE_PROXY_URL + username
-    return json.loads(requests.get(request_url).content)
+    return requests.get(request_url).json()
 
 def get_insta_post_url(shortcode: str):
     return f'https://instagram.com/p/{shortcode}'
