@@ -50,8 +50,13 @@ def get_youtube_livestream_embed(video_id: str, only_livestream=True):
         if not actual_start_time and not scheduled_start_time:
             logger.exception(f'Video {video_id} is a livestream but has no start time')
             return None
+        elif not actual_start_time:
+            start_time = scheduled_start_time
+        elif not scheduled_start_time:
+            start_time = actual_start_time
+        else:
+            start_time = actual_start_time if actual_start_time < scheduled_start_time else scheduled_start_time
 
-        start_time = actual_start_time if actual_start_time < scheduled_start_time else scheduled_start_time
         embed.timestamp = start_time
 
         if datetime.now(timezone.utc) - start_time > timedelta(0):
