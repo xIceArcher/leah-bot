@@ -38,14 +38,20 @@ def get_youtube_livestream_embed(video_id: str, only_livestream=True):
                          icon_url=get_thumbnail_url(channel_info['snippet']['thumbnails']))
 
         try:
-            start_time = parser.isoparse(video_info['liveStreamingDetails']['actualStartTime'])
+            actual_start_time = parser.isoparse(video_info['liveStreamingDetails']['actualStartTime'])
         except KeyError:
-            try:
-                start_time = parser.isoparse(video_info['liveStreamingDetails']['scheduledStartTime'])
-            except KeyError:
-                logger.exception(f'Video {video_id} is a livestream but has no start time')
-                return None
+            actual_start_time = None
 
+        try:
+            scheduled_start_time = parser.isoparse(video_info['liveStreamingDetails']['scheduledStartTime'])
+        except KeyError:
+            scheduled_start_time = None
+
+        if not actual_start_time and not scheduled_start_time:
+            logger.exception(f'Video {video_id} is a livestream but has no start time')
+            return None
+
+        start_time = actual_start_time if actual_start_time < scheduled_start_time else scheduled_start_time
         embed.timestamp = start_time
 
         if datetime.now(timezone.utc) - start_time > timedelta(0):
