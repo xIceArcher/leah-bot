@@ -3,7 +3,9 @@ import re
 from collections import OrderedDict
 
 import requests
+from urllib3.exceptions import InsecureRequestWarning
 
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def get_tweet_ids(s: str):
     regex = re.compile(r'(?:http[s]?://)?twitter\.com/[^/]*/status/([0-9]*)(?:\?[^ \r\n]*)?')
@@ -54,7 +56,7 @@ def unpack_short_link(s: str):
     curr_redirects = 0
 
     while curr_redirects < MAX_REDIRECTS:
-        res = requests.get(s, allow_redirects=False)
+        res = requests.get(s, allow_redirects=False, verify=False)
         if res.status_code == http.HTTPStatus.MOVED_PERMANENTLY or res.status_code == http.HTTPStatus.FOUND:
             s = res.headers['Location']
             curr_redirects += 1
