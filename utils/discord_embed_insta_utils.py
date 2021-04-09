@@ -21,6 +21,9 @@ def get_insta_embeds(shortcode: str=None, post: dict=None, user: dict=None):
     if shortcode is None:
         shortcode = post['shortcode']
 
+    if post is None and shortcode is None:
+        return []
+
     user_info_source = user if user is not None else post['owner']
 
     embeds = []

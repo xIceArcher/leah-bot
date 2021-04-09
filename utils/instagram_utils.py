@@ -1,18 +1,31 @@
 from datetime import datetime
 
-import bs4
 import requests
 
 INSTAGRAM_POST_PROXY_URL = 'https://instagram.com/tv/'
 INSTAGRAM_TIMELINE_PROXY_URL = 'https://instagram.com/tv/'
 
+MAX_RETRIES = 5
+
 def get_insta_post(shortcode: str):
+    curr_retries = 0
     request_url = INSTAGRAM_POST_PROXY_URL + shortcode
-    return requests.get(request_url).json()
+
+    while curr_retries < MAX_RETRIES:
+        try:
+            return requests.get(request_url, timeout=5).json()
+        except requests.exceptions.Timeout:
+            curr_retries += 1
 
 def get_insta_timeline(username: str):
+    curr_retries = 0
     request_url = INSTAGRAM_TIMELINE_PROXY_URL + username
-    return requests.get(request_url).json()
+
+    while curr_retries < MAX_RETRIES:
+        try:
+            return requests.get(request_url, timeout=5).json()
+        except requests.exceptions.Timeout:
+            curr_retries += 1
 
 def get_insta_post_url(shortcode: str):
     return f'https://instagram.com/p/{shortcode}'
