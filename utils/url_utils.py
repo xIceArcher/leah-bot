@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 import requests
 from urllib3.exceptions import InsecureRequestWarning
+from urllib.parse import urljoin
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -55,9 +56,20 @@ def unpack_short_link(s: str):
     MAX_REDIRECTS = 5
     curr_redirects = 0
 
+    prev_url = s
     while curr_redirects < MAX_REDIRECTS:
-        res = requests.get(s, allow_redirects=False, verify=False)
+        try:
+            res = requests.get(s, allow_redirects=False, verify=False)
+        except requests.exceptions.MissingSchema:
+            # Occurs when URL is relative
+            try:
+                s = urljoin(prev_url, s)
+                res = requests.get(s, allow_redirects=False, verify=False)
+            except Exception:
+                break
+
         if res.status_code == http.HTTPStatus.MOVED_PERMANENTLY or res.status_code == http.HTTPStatus.FOUND:
+            prev_url = s
             s = res.headers['Location']
             curr_redirects += 1
         else:
