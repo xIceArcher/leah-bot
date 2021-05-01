@@ -13,7 +13,8 @@ def get_insta_post(shortcode: str):
 
     while curr_retries < MAX_RETRIES:
         try:
-            return requests.get(request_url, timeout=5).json()
+            ret = requests.get(request_url, timeout=5).json()
+            return ret["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]
         except requests.exceptions.Timeout:
             curr_retries += 1
 
