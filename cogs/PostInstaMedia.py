@@ -37,6 +37,9 @@ class PostInstaMedia(commands.Cog):
         if not self.insta_queue.empty():
             shortcode, message = self.insta_queue.get()
             post = get_insta_post(shortcode)
+            if post is None:
+                return
+
             embeds = get_insta_embeds(post=post)
 
             for embed in embeds:
