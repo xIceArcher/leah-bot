@@ -2,6 +2,7 @@ import logging
 
 from discord.ext import commands
 
+from utils.discord_utils import clean_message
 from utils.discord_embed_twitter_utils import get_tweet_embeds
 from utils.twitter_utils import extract_photo_urls, extract_video_url, get_tweet, get_tweet_url
 from utils.url_utils import get_tweet_ids
@@ -67,6 +68,20 @@ class PostTweetMedia(commands.Cog):
 
         logger.info(f'{get_tweet_url(tweet)} sent to #{ctx.channel.name} in {ctx.guild.name}')
         await ctx.channel.send(video)
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.content.startswith(self.bot.command_prefix):
+            return
+
+        cleaned_message = clean_message(message.content)
+
+        for tweet_id in get_tweet_ids(cleaned_message):
+            tweet = get_tweet(int(tweet_id))
+            video_url = extract_video_url(tweet)
+            await message.channel.send(video_url)
+
+        await self.bot.process_commands(message)
 
 def setup(bot):
     bot.add_cog(PostTweetMedia(bot))
