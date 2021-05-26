@@ -71,39 +71,54 @@ class TwitterStalker(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def stalk(self, ctx, screen_name: str, time: int = None):
-        user = get_user(screen_name=screen_name)
+    async def stalk(self, ctx, *args):
+        time, screen_names = None, None
 
-        if not user:
-            await ctx.channel.send(f'@{screen_name} is not a valid Twitter username!')
+        if len(args) == 0:
+            await TwitterStalker.stalks(self, ctx)
             return
-
-        user_id = user.id_str
-
-        if user_id not in self.stalk_destinations:
-            self.stalk_destinations[user_id] = []
-            self.restart_flag.set()
-
-        if ctx.channel.id not in self.stalk_destinations[user_id]:
-            self.stalk_destinations[user_id].append(ctx.channel.id)
-            if time:
-                logger.info(f'Stalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name} for {time} minutes')
-                await ctx.channel.send(f'Stalked @{user.screen_name} in this channel! Will auto-unstalk after {time} minutes.')
-            else:
-                logger.info(f'Stalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name}')
-                await ctx.channel.send(f'Stalked @{user.screen_name} in this channel!')
+        elif len(args) == 1:
+            screen_names = [args[0]]
         else:
-            await ctx.channel.send(f'@{user.screen_name} is already being stalked in this channel!')
-            return
+            try:
+                time = int(args[-1])
+                screen_names = args[0:-1]
+            except ValueError:
+                screen_names = args
 
-        if ctx.channel.id not in self.stalk_users:
-            self.stalk_users[ctx.channel.id] = []
-            self.tweet_history[ctx.channel.id] = {}
+        for screen_name in screen_names:
+            user = get_user(screen_name=screen_name)
 
-        self.stalk_users[ctx.channel.id].append(user_id)
+            if not user:
+                await ctx.channel.send(f'@{screen_name} is not a valid Twitter username!')
+                return
 
-        if time:
-            asyncio.run_coroutine_threadsafe(self.auto_unstalk(ctx, user.screen_name, time), self.bot.loop)
+            user_id = user.id_str
+
+            if user_id not in self.stalk_destinations:
+                self.stalk_destinations[user_id] = []
+                self.restart_flag.set()
+
+            if ctx.channel.id not in self.stalk_destinations[user_id]:
+                self.stalk_destinations[user_id].append(ctx.channel.id)
+                if time:
+                    logger.info(f'Stalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name} for {time} minutes')
+                    await ctx.channel.send(f'Stalked @{user.screen_name} in this channel! Will auto-unstalk after {time} minutes.')
+                else:
+                    logger.info(f'Stalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name}')
+                    await ctx.channel.send(f'Stalked @{user.screen_name} in this channel!')
+            else:
+                await ctx.channel.send(f'@{user.screen_name} is already being stalked in this channel!')
+                return
+
+            if ctx.channel.id not in self.stalk_users:
+                self.stalk_users[ctx.channel.id] = []
+                self.tweet_history[ctx.channel.id] = {}
+
+            self.stalk_users[ctx.channel.id].append(user_id)
+
+            if time:
+                asyncio.run_coroutine_threadsafe(self.auto_unstalk(ctx, user.screen_name, time), self.bot.loop)
 
     @commands.command()
     @commands.is_owner()
