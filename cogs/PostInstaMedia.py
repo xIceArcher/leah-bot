@@ -36,11 +36,11 @@ class PostInstaMedia(commands.Cog):
     async def discord_poster(self):
         if not self.insta_queue.empty():
             shortcode, message = self.insta_queue.get()
-            post = get_insta_post(shortcode)
+            post = await get_insta_post(shortcode)
             if post is None:
                 return
 
-            embeds = get_insta_embeds(post=post)
+            embeds = await get_insta_embeds(post=post)
 
             for embed in embeds:
                 while True:
@@ -50,7 +50,7 @@ class PostInstaMedia(commands.Cog):
                     except ClientConnectionError:
                         pass
 
-            video_urls = get_insta_video_urls(post=post)
+            video_urls = await get_insta_video_urls(post=post)
 
             if video_urls:
                 for video_url in video_urls:

@@ -56,8 +56,8 @@ class InstaStalker(commands.Cog):
 
                 for post in new_posts:
                     shortcode = post['shortcode']
-                    embeds = get_insta_embeds(post=post, user=user_timeline)
-                    video_urls = get_insta_video_urls(post=post)
+                    embeds = await get_insta_embeds(post=post, user=user_timeline)
+                    video_urls = await get_insta_video_urls(post=post)
 
                     for channel_id in self.stalk_destinations[user_id]:
                         channel = self.bot.get_channel(channel_id)
