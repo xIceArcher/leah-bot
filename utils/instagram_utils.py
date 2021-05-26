@@ -1,35 +1,31 @@
+import asyncio
 from datetime import datetime
 
 import aiohttp
-import requests
 
 INSTAGRAM_POST_PROXY_URL = 'https://instagram.com/tv/'
 INSTAGRAM_TIMELINE_PROXY_URL = 'https://instagram.com/tv/'
 
-MAX_RETRIES = 5
-
 async def get_insta_post(shortcode: str):
-    curr_retries = 0
     request_url = INSTAGRAM_POST_PROXY_URL + shortcode
 
-    while curr_retries < MAX_RETRIES:
-        try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
-                async with session.get(request_url) as resp:
-                    ret = await resp.json()
-                    return ret["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]
-        except requests.exceptions.Timeout:
-            curr_retries += 1
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(request_url) as resp:
+                ret = await resp.json()
+                return ret["entry_data"]["PostPage"][0]["graphql"]["shortcode_media"]
+    except asyncio.TimeoutError:
+        return None
 
-def get_insta_timeline(username: str):
-    curr_retries = 0
+async def get_insta_timeline(username: str):
     request_url = INSTAGRAM_TIMELINE_PROXY_URL + username
 
-    while curr_retries < MAX_RETRIES:
-        try:
-            return requests.get(request_url, timeout=5).json()
-        except requests.exceptions.Timeout:
-            curr_retries += 1
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(request_url) as resp:
+                return await resp.json()
+    except asyncio.TimeoutError:
+        return None
 
 def get_insta_post_url(shortcode: str):
     return f'https://instagram.com/p/{shortcode}'

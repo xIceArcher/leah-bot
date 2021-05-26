@@ -46,7 +46,7 @@ class InstaStalker(commands.Cog):
     @tasks.loop(minutes=30.0)
     async def discord_poster(self):
         for user_id in self.stalk_destinations:
-            user_timeline = get_insta_timeline(user_id)
+            user_timeline = await get_insta_timeline(user_id)
             curr_post_count = extract_post_count(user_timeline)
 
             if self.last_post_count[user_id] < curr_post_count:
