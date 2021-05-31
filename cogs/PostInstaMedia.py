@@ -35,29 +35,32 @@ class PostInstaMedia(commands.Cog):
     @tasks.loop(seconds=1.0)
     async def discord_poster(self):
         if not self.insta_queue.empty():
-            shortcode, message = self.insta_queue.get()
-            post = await get_insta_post(shortcode)
-            if post is None:
-                return
+            try:
+                shortcode, message = self.insta_queue.get()
+                post = await get_insta_post(shortcode)
+                if post is None:
+                    return
 
-            embeds = await get_insta_embeds(post=post)
+                embeds = await get_insta_embeds(post=post)
 
-            for embed in embeds:
-                while True:
-                    try:
-                        await message.channel.send(embed=embed)
-                        break
-                    except ClientConnectionError:
-                        pass
+                for embed in embeds:
+                    while True:
+                        try:
+                            await message.channel.send(embed=embed)
+                            break
+                        except ClientConnectionError:
+                            pass
 
-            video_urls = await get_insta_video_urls(post=post)
+                video_urls = await get_insta_video_urls(post=post)
 
-            if video_urls:
-                for video_url in video_urls:
-                    await message.channel.send(video_url)
+                if video_urls:
+                    for video_url in video_urls:
+                        await message.channel.send(video_url)
 
-            logger.info(f"{get_insta_post_url(shortcode)} sent to #{message.channel.name} in {message.guild.name}")
-            await asyncio.sleep(10)
+                logger.info(f"{get_insta_post_url(shortcode)} sent to #{message.channel.name} in {message.guild.name}")
+                await asyncio.sleep(10)
+            except:
+                pass
 
 
 def setup(bot):
