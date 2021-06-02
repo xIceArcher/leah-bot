@@ -7,8 +7,8 @@ from utils.credentials_utils import get_credentials
 formatter = '%(levelname)s %(name)s:%(lineno)d: %(asctime)s - %(message)s'
 logging.basicConfig(level=logging.INFO, format=formatter)
 
-active_extensions = ['cogs.Admin', 'cogs.PostQuotedTweet', 'cogs.PostTweetMedia', 'cogs.TwitterStalker', 'cogs.PostTime',
-                     'cogs.PostInstaMedia', 'cogs.TwitterIconStalker', 'cogs.PostYoutubeInfo', 'cogs.InstaStalker']
+active_extensions = ['cogs.Admin', 'cogs.PostTweetMedia', 'cogs.TwitterStalker', 'cogs.PostTime',
+                     'cogs.PostInstaMedia', 'cogs.TwitterIconStalker', 'cogs.PostYoutubeInfo']
 
 bot = commands.Bot(command_prefix='!!', description='placeholder')
 
