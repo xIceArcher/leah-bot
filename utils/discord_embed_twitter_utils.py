@@ -12,9 +12,9 @@ from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls,
 from utils.url_utils import unpack_short_link
 
 logger = logging.getLogger(__name__)
+TWITTER_COLOR = int('1DA1F2', base=16)
 
-
-def get_tweet_embeds(tweet, color: int = None):
+def get_tweet_embeds(tweet, color: int = TWITTER_COLOR):
     embeds = [get_main_tweet_embed(tweet, color)] + get_remaining_photo_embeds(tweet, color)
 
     embeds[-1].add_tweet_footer(tweet)
