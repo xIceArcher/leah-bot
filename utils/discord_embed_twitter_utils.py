@@ -6,7 +6,7 @@ import urllib
 from discord import Embed
 from regex import regex
 
-from utils.discord_embed_utils import get_photo_embed
+from utils.discord_embed_utils import get_photo_embed, get_named_link
 from utils.twitter_utils import extract_text, get_tweet_url, extract_photo_urls, get_profile_url, is_reply, \
     get_user, is_quote, is_retweet, get_hashtag_url, extract_main_photo_url
 from utils.url_utils import unpack_short_link
@@ -282,10 +282,6 @@ def delete_quote_links(text: str, tweet):
         text = regex.sub(get_tweet_url(tweet.quoted_status), '', text, flags=regex.IGNORECASE)
 
     return text
-
-
-def get_named_link(text: str, link: str):
-    return f'[{text}]({link})'
 
 
 def add_tweet_footer(self: discord.Embed, tweet):

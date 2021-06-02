@@ -1,14 +1,14 @@
-import datetime
 import logging
 
 import discord
 from discord import Embed
+from regex import regex
 
-from utils.discord_embed_utils import get_photo_embed
+from utils.discord_embed_utils import get_photo_embed, get_named_link
 from utils.instagram_utils import get_insta_post, get_insta_post_url, get_insta_user_url, \
     extract_full_name, extract_username, extract_profile_pic_url, \
     extract_likes, extract_timestamp, extract_photos, extract_text, \
-    extract_videos
+    extract_videos, get_hashtag_url
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ async def get_insta_embeds(shortcode: str=None, post: dict=None, user: dict=None
 
     main_embed = Embed(url=get_insta_post_url(shortcode),
                        title=f'Instagram post by {extract_full_name(user_info_source)}',
-                       description=extract_text(post, max_length=240))
+                       description=replace_hashtag_with_link(extract_text(post, max_length=1800)))
 
     main_embed.set_author(name=f'{extract_full_name(user_info_source)} ({extract_username(user_info_source)})',
                           url=f'{get_insta_user_url(user_info_source)}',
@@ -56,6 +56,14 @@ async def get_insta_video_urls(shortcode: str=None, post: dict=None):
         post = await get_insta_post(shortcode)
 
     return extract_videos(post)
+
+
+def replace_hashtag_with_link(text: str):
+    hashtags = regex.findall(r'(?:[#|＃])[^\d\W][\w]*', text)
+    for hashtag in hashtags:
+        text = regex.sub(regex.escape(hashtag), fr'{get_named_link(hashtag, get_hashtag_url(hashtag))}', text)
+
+    return text
 
 
 def add_insta_footer(self: discord.Embed, post):
