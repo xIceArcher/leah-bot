@@ -8,7 +8,7 @@ from utils.discord_embed_utils import get_photo_embed, get_named_link
 from utils.instagram_utils import get_insta_post, get_insta_post_url, get_insta_user_url, \
     extract_full_name, extract_username, extract_profile_pic_url, \
     extract_likes, extract_timestamp, extract_photos, extract_text, \
-    extract_videos, get_hashtag_url
+    extract_videos, get_hashtag_url, get_mention_url
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ async def get_insta_embeds(shortcode: str=None, post: dict=None, user: dict=None
 
     main_embed = Embed(url=get_insta_post_url(shortcode),
                        title=f'Instagram post by {extract_full_name(user_info_source)}',
-                       description=replace_hashtag_with_link(extract_text(post, max_length=1800)))
+                       description=populate_links(extract_text(post, max_length=1800)))
 
     main_embed.set_author(name=f'{extract_full_name(user_info_source)} ({extract_username(user_info_source)})',
                           url=f'{get_insta_user_url(user_info_source)}',
@@ -56,6 +56,33 @@ async def get_insta_video_urls(shortcode: str=None, post: dict=None):
         post = await get_insta_post(shortcode)
 
     return extract_videos(post)
+
+
+def populate_links(text: str):
+    funcs = [replace_mention_with_link, replace_hashtag_with_link]
+    for func in funcs:
+        text = func(text)
+    return text
+
+
+def replace_mention_with_link(text: str):
+    mentions = regex.findall(r'(?:[@|＠])[^\d\W][\w]*', text)
+    mentions.sort(key=lambda x: len(x))
+
+    idx_mention_map = {}
+
+    for mention in mentions:
+        indices = [m.start(0) for m in regex.finditer(regex.escape(mention), text)]
+        for idx in indices:
+            idx_mention_map[idx] = mention
+
+    idx_mention_list = sorted(list(idx_mention_map.items()), reverse=True)
+
+    for start, mention_text in idx_mention_list:
+        end = start + len(mention_text)
+        text = text[0:start] + get_named_link(mention_text, get_mention_url(mention_text)) + text[end:]
+
+    return text
 
 
 def replace_hashtag_with_link(text: str):

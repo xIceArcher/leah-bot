@@ -99,3 +99,9 @@ def get_hashtag_url(hashtag: str):
         return f'https://www.instagram.com/explore/tags/{hashtag[1:]}/'
 
     return f'https://www.instagram.com/explore/tags{hashtag}/'
+
+def get_mention_url(mention: str):
+    if mention.startswith('@') or mention.startswith('＠'):
+        return f'https://www.instagram.com/{mention[1:]}/'
+
+    return f'https://www.instagram.com/{mention}/'
