@@ -60,8 +60,20 @@ async def get_insta_video_urls(shortcode: str=None, post: dict=None):
 
 def replace_hashtag_with_link(text: str):
     hashtags = regex.findall(r'(?:[#|＃])[^\d\W][\w]*', text)
+    hashtags.sort(key=lambda x: len(x))
+
+    idx_hashtag_map = {}
+
     for hashtag in hashtags:
-        text = regex.sub(regex.escape(hashtag), fr'{get_named_link(hashtag, get_hashtag_url(hashtag))}', text)
+        indices = [m.start(0) for m in regex.finditer(regex.escape(hashtag), text)]
+        for idx in indices:
+            idx_hashtag_map[idx] = hashtag
+
+    idx_hashtag_list = sorted(list(idx_hashtag_map.items()), reverse=True)
+
+    for start, hashtag_text in idx_hashtag_list:
+        end = start + len(hashtag_text)
+        text = text[0:start] + get_named_link(hashtag_text, get_hashtag_url(hashtag_text)) + text[end:]
 
     return text
 

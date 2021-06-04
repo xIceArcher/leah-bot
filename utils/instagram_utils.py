@@ -95,7 +95,7 @@ def extract_recent_posts(timeline: dict, max_posts=12):
     return ret
 
 def get_hashtag_url(hashtag: str):
-    if hashtag.startswith('#'):
+    if hashtag.startswith('#') or hashtag.startswith('＃'):
         return f'https://www.instagram.com/explore/tags/{hashtag[1:]}/'
 
     return f'https://www.instagram.com/explore/tags{hashtag}/'
