@@ -27,22 +27,27 @@ async def get_insta_embeds(shortcode: str=None, post: dict=None, user: dict=None
     user_info_source = user if user is not None else post['owner']
 
     embeds = []
+    text_posts = populate_links(extract_text(post), 2048)
 
     main_embed = Embed(url=get_insta_post_url(shortcode),
                        title=f'Instagram post by {extract_full_name(user_info_source)}',
-                       description=populate_links(extract_text(post, max_length=1800)))
+                       description=text_posts[0])
 
     main_embed.set_author(name=f'{extract_full_name(user_info_source)} ({extract_username(user_info_source)})',
                           url=f'{get_insta_user_url(user_info_source)}',
                           icon_url=extract_profile_pic_url(user_info_source))
-
     main_embed.color = INSTA_COLOR
-    main_embed.add_field(name="Likes", value=extract_likes(post), inline=True)
+    embeds.append(main_embed)
+
+    for text_post in text_posts[1:]:
+        text_embed = Embed(description=text_post)
+        text_embed.color = INSTA_COLOR
+        embeds.append(text_embed)
+
+    embeds[-1].add_field(name="Likes", value=extract_likes(post), inline=True)
 
     photos = extract_photos(post)
-    main_embed.set_image(url=photos[0])
-
-    embeds.append(main_embed)
+    embeds[-1].set_image(url=photos[0])
 
     for photo in photos[1:]:
         embeds.append(get_photo_embed(photo, color=INSTA_COLOR))
@@ -58,14 +63,46 @@ async def get_insta_video_urls(shortcode: str=None, post: dict=None):
     return extract_videos(post)
 
 
-def populate_links(text: str):
-    funcs = [replace_mention_with_link, replace_hashtag_with_link]
-    for func in funcs:
-        text = func(text)
-    return text
+def populate_links(full_text: str, max_post_length: int):
+    funcs = [(get_mentions, get_mention_url), (get_hashtags, get_hashtag_url)]
 
+    entities = []
+    for get_func, url_func in funcs:
+        entities.extend([(start, start + len(text), text, lambda x: get_named_link(x, url_func(x))) for start, text in get_func(full_text)])
+    entities.sort(reverse=True)
 
-def replace_mention_with_link(text: str):
+    split_posts = ['']
+    if entities and entities[-1][0] == 0:
+        curr_entity = entities.pop()
+    elif entities:
+        end_pos = min(max_post_length, entities[-1][0])
+        curr_entity = (0, end_pos, full_text[0:end_pos], lambda x: x)
+    else:
+        curr_entity = (0, max_post_length, full_text[0:max_post_length], lambda x: x)
+
+    while True:
+        _, next_start_pos, curr_text, func = curr_entity
+
+        if len(split_posts[-1]) + len(func(curr_text)) > max_post_length:
+            split_posts.append('')
+        split_posts[-1] += func(curr_text)
+
+        if next_start_pos == len(full_text):
+            break
+        elif entities and next_start_pos == entities[-1][0]:
+            curr_entity = entities.pop()
+        else:
+            # The next entity is free-running text
+            # 3 cases: all the way to the end, until this post is full, or until the start of the next entity
+            next_end_pos = min(len(full_text), next_start_pos + (max_post_length - len(split_posts[-1])))
+            if entities:
+                next_end_pos = min(next_end_pos, entities[-1][0])
+
+            curr_entity = (next_start_pos, next_end_pos, full_text[next_start_pos:next_end_pos], lambda x: x)
+
+    return split_posts
+
+def get_mentions(text: str):
     mentions = regex.findall(r'(?:[@|＠])[^\d\W][\w]*', text)
     mentions.sort(key=lambda x: len(x))
 
@@ -76,16 +113,10 @@ def replace_mention_with_link(text: str):
         for idx in indices:
             idx_mention_map[idx] = mention
 
-    idx_mention_list = sorted(list(idx_mention_map.items()), reverse=True)
-
-    for start, mention_text in idx_mention_list:
-        end = start + len(mention_text)
-        text = text[0:start] + get_named_link(mention_text, get_mention_url(mention_text)) + text[end:]
-
-    return text
+    return idx_mention_map.items()
 
 
-def replace_hashtag_with_link(text: str):
+def get_hashtags(text: str):
     hashtags = regex.findall(r'(?:[#|＃])[^\d\W][\w]*', text)
     hashtags.sort(key=lambda x: len(x))
 
@@ -96,14 +127,7 @@ def replace_hashtag_with_link(text: str):
         for idx in indices:
             idx_hashtag_map[idx] = hashtag
 
-    idx_hashtag_list = sorted(list(idx_hashtag_map.items()), reverse=True)
-
-    for start, hashtag_text in idx_hashtag_list:
-        end = start + len(hashtag_text)
-        text = text[0:start] + get_named_link(hashtag_text, get_hashtag_url(hashtag_text)) + text[end:]
-
-    return text
-
+    return idx_hashtag_map.items()
 
 def add_insta_footer(self: discord.Embed, post):
     self.set_footer(text='Instagram',

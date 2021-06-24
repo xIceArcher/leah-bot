@@ -68,10 +68,9 @@ def extract_videos(post: dict):
         else:
             return None
 
-def extract_text(post: dict, max_length: int):
+def extract_text(post: dict):
     try:
-        text = post['edge_media_to_caption']['edges'][0]['node']['text']
-        return text[:max_length] + ('...' if len(text) > max_length else '')
+        return post['edge_media_to_caption']['edges'][0]['node']['text']
     except IndexError:
         return ''
 
