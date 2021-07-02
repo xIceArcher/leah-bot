@@ -14,7 +14,7 @@ from discord.ext import commands, tasks
 from tweepy import TweepError
 
 from utils.discord_embed_twitter_utils import get_tweet_embeds, get_color_embed
-from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, get_tweet, \
+from utils.twitter_utils import get_tweet_url, get_tweepy, get_user, is_reply, is_retweet, get_tweet, \
     extract_displayed_video_url, get_timeline, get_mock_tweet, extract_visible_id
 from utils.url_utils import get_tweet_ids
 from utils.utils import format_time_delta
@@ -287,7 +287,7 @@ class TwitterStalker(commands.Cog):
                 if not self.is_relevant(extended_tweet, channel_id):
                     continue
 
-                if extract_visible_id(extended_tweet) in self.tweet_history[channel_id]:
+                if is_retweet(extended_tweet) and extract_visible_id(extended_tweet) in self.tweet_history[channel_id]:
                     await self.handle_posted_retweet(extended_tweet, channel_id)
                 else:
                     await self.handle_new_tweet(extended_tweet, channel_id)
