@@ -58,8 +58,9 @@ class TwitterStalker(commands.Cog):
         self.stalk_destinations = {}
         self.stalk_users = {}
         self.colors = {}
-        self.last_tweet_time = datetime.now(timezone.utc)
+        self.startup_time = datetime.now(timezone.utc)
         self.tweet_history = {}
+        self.sent_tweets = set()
 
         self.load_destinations()
         self.load_colors()
@@ -206,29 +207,17 @@ class TwitterStalker(commands.Cog):
                 message=f'User @{screen_name} (ID: {user.id_str}) now has color {hex(user_color)}',
                 color=user_color))
 
-    @commands.command()
-    @commands.is_owner()
-    async def catchup(self, ctx, time=None):
-        if time:
-            time_arr = list(map(int, time.split(' ')))
-            from_time = datetime(time_arr[0], time_arr[1], time_arr[2], time_arr[3], time_arr[4]).astimezone(
-                timezone.utc)
-        else:
-            from_time = self.last_tweet_time
-
+    def catchup(self):
         tweets = []
 
         for user_id in self.stalk_destinations:
             for tweet in get_timeline(user_id):
-                if tweet.created_at.astimezone(timezone.utc) > from_time:
+                if tweet.created_at.astimezone(timezone.utc) > self.startup_time and tweet.id not in self.sent_tweets:
                     tweets.append(get_mock_tweet(user_id, tweet.id, tweet.created_at))
 
         tweets.sort(key=lambda x: x.created_at)
-
         for tweet in tweets:
             self.tweet_queue.put(tweet)
-
-        logger.info(f'Successfully caught up from {from_time}')
 
     @commands.command()
     async def archive(self, ctx, screen_name):
@@ -292,6 +281,8 @@ class TwitterStalker(commands.Cog):
                 self.handle_posting_error(error_tweet=short_tweet)
                 continue
 
+            self.sent_tweets.add(extended_tweet.id)
+
             for channel_id in self.stalk_destinations[user_id]:
                 if not self.is_relevant(extended_tweet, channel_id):
                     continue
@@ -324,14 +315,12 @@ class TwitterStalker(commands.Cog):
             if video_url:
                 await channel.send(video_url)
 
-            self.tweet_history[channel_id][extract_visible_id(tweet)] = (
-            main_discord_message.id, timestamp_discord_message.id)
+            self.tweet_history[channel_id][extract_visible_id(tweet)] = (main_discord_message.id, timestamp_discord_message.id)
         except ClientConnectorError:
             self.tweet_queue.put(tweet)
             logger.info(f'Could not connect to client, requeueing tweet {tweet.id}')
             return
 
-        self.last_tweet_time = datetime.now(timezone.utc)
         logger.info(f'{get_tweet_url(tweet)} sent to channel #{channel.name} in {channel.guild.name}')
 
     async def handle_posted_retweet(self, tweet, channel_id):
@@ -383,6 +372,7 @@ class TwitterStalker(commands.Cog):
             self.kill_stream()
             self.start_stream()
             self.save_destinations()
+            self.catchup()
             self.restart_flag.clear()
             logger.info('Stream restarted!')
 
