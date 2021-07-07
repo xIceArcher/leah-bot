@@ -59,6 +59,7 @@ class TwitterStalker(commands.Cog):
         self.stalk_users = {}
         self.colors = {}
         self.startup_time = datetime.now(timezone.utc)
+        self.last_catchup = datetime.now(timezone.utc)
         self.tweet_history = {}
         self.sent_tweets = set()
 
@@ -207,17 +208,31 @@ class TwitterStalker(commands.Cog):
                 message=f'User @{screen_name} (ID: {user.id_str}) now has color {hex(user_color)}',
                 color=user_color))
 
-    def catchup(self):
+    @tasks.loop(minutes=10.0)
+    async def tweet_stream_monitoring(self):
+        await self.catchup(should_restart=True)
+
+    async def catchup(self, should_restart=False):
+        if (datetime.now(timezone.utc) - self.last_catchup).total_seconds() < 60:
+            await asyncio.sleep(60)
+
         tweets = []
 
         for user_id in self.stalk_destinations:
             for tweet in get_timeline(user_id):
                 if tweet.created_at.astimezone(timezone.utc) > self.startup_time and tweet.id not in self.sent_tweets:
                     tweets.append(get_mock_tweet(user_id, tweet.id, tweet.created_at))
+            await asyncio.sleep(1)
 
         tweets.sort(key=lambda x: x.created_at)
         for tweet in tweets:
             self.tweet_queue.put(tweet)
+
+        if tweets and should_restart:
+            logger.info('Detected missing tweets, restarting stream...')
+            self.restart_flag.set()
+
+        self.last_catchup = datetime.now(timezone.utc)
 
     @commands.command()
     async def archive(self, ctx, screen_name):
@@ -372,7 +387,7 @@ class TwitterStalker(commands.Cog):
             self.kill_stream()
             self.start_stream()
             self.save_destinations()
-            self.catchup()
+            await self.catchup()
             self.restart_flag.clear()
             logger.info('Stream restarted!')
 
