@@ -36,6 +36,10 @@ def get_insta_shortcodes(s: str):
     return list(OrderedDict.fromkeys(ret))
 
 
+def has_insta_links(s: str) -> bool:
+    return re.compile(r'http[s]?://(?:w{3}\.)?instagram\.com').search(s) != None
+
+
 def get_ameblo_links(s: str):
     regex = re.compile(r'http[s]?://ameblo\.jp/[A-Za-z0-9_\-]+/entry-[0-9]+\.html')
     return list(OrderedDict.fromkeys(regex.findall(s)))
@@ -68,7 +72,7 @@ def unpack_short_link(s: str):
             except Exception:
                 break
 
-        if res.status_code == http.HTTPStatus.MOVED_PERMANENTLY or res.status_code == http.HTTPStatus.FOUND:
+        if not has_insta_links(s) and (res.status_code == http.HTTPStatus.MOVED_PERMANENTLY or res.status_code == http.HTTPStatus.FOUND):
             prev_url = s
             s = res.headers['Location']
             curr_redirects += 1
