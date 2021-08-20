@@ -385,9 +385,9 @@ class TwitterStalker(commands.Cog):
         if self.restart_flag.is_set():
             logger.info('Restarting stream......')
             self.kill_stream()
-            self.start_stream()
             self.save_destinations()
             await self.catchup()
+            self.start_stream()
             self.restart_flag.clear()
             logger.info('Stream restarted!')
 
