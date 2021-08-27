@@ -58,6 +58,7 @@ class TwitterStalker(commands.Cog):
         self.stalk_destinations = {}
         self.stalk_users = {}
         self.colors = {}
+        self.stalk_start_time = {}
         self.startup_time = datetime.now(timezone.utc)
         self.last_catchup = datetime.now(timezone.utc)
         self.tweet_history = {}
@@ -99,6 +100,7 @@ class TwitterStalker(commands.Cog):
 
             if user_id not in self.stalk_destinations:
                 self.stalk_destinations[user_id] = []
+                self.stalk_start_time[user_id] = datetime.now(timezone.utc)
                 self.restart_flag.set()
 
             if ctx.channel.id not in self.stalk_destinations[user_id]:
@@ -150,6 +152,7 @@ class TwitterStalker(commands.Cog):
 
         if not self.stalk_destinations[user_id]:
             del self.stalk_destinations[user_id]
+            del self.stalk_start_time[user_id]
             self.restart_flag.set()
 
         logger.info(f'Unstalked @{user.screen_name} in #{ctx.channel.name} in {ctx.guild.name}')
@@ -220,7 +223,7 @@ class TwitterStalker(commands.Cog):
 
         for user_id in self.stalk_destinations:
             for tweet in get_timeline(user_id):
-                if tweet.created_at.astimezone(timezone.utc) > self.startup_time and tweet.id not in self.sent_tweets:
+                if tweet.created_at.astimezone(timezone.utc) > max(self.startup_time, self.stalk_start_time[user_id]) and tweet.id not in self.sent_tweets:
                     tweets.append(get_mock_tweet(user_id, tweet.id, tweet.created_at))
             await asyncio.sleep(1)
 
