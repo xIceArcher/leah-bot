@@ -448,6 +448,7 @@ class TwitterStalker(commands.Cog):
 
     def setup_stalked_users(self):
         for user_id in self.stalk_destinations:
+            self.stalk_start_time[user_id] = self.startup_time
             for channel_id in self.stalk_destinations[user_id]:
                 if channel_id not in self.stalk_users:
                     self.stalk_users[channel_id] = []
